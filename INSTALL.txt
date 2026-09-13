@@ -1,0 +1,40 @@
+Consistent Vaulting - data-v3 prerelease
+Requires Bingus Shared Loader loader-v4 or newer / API 1 or newer.
+Supported: Steam build 24826606 / EXE 1.8.45317.0.
+
+1. Close Helldivers 2 before installing.
+2. Import ConsistentVaulting.zip and the updated BingusSharedLoader.zip into
+   Arsenal or HD2MM. Replace the previous loader; keep only one copy enabled.
+3. Enable both. In Arsenal's default priority mode, place Bingus Shared Loader
+   LAST (bottom of the list). If first-mod priority is enabled, place it first.
+4. Purge and Deploy, then launch the game normally.
+
+If upgrading from data-v1 or data-v2, replace ConsistentVaulting.zip; keep
+loader-v4 or newer. data-v3 accepts newer loader APIs.
+
+Only the installing player's avatar is selected for changes. Teammates do not
+need this package. Host/client behavior has not yet been validated in gameplay.
+Hold/use your normal manual climb input; the mod adds no keybind or menu.
+
+The mod tries later valid query candidates and can tolerate an obstacle's
+manual-climb metadata veto after existing physical exit checks pass. It leaves
+height/reach settings, shared obstacle flags and collision filters unchanged.
+It refreshes completed queries in private buffers and calls the original local
+vault routine with zero elapsed time. Temporary edits are limited to your
+avatar's query results and phase. It does not install a DLL, patch executable
+instructions or change page protection.
+
+Offline tests pass. The revised native calls, animation and host/client behavior
+remain to be tested in-game. This is not a gameplay-verified release. No mod can
+guarantee that every visually plausible obstacle is usable.
+
+Logs: %LOCALAPPDATA%/ConsistentVaulting.log and BingusSharedLoader.log.
+The vault log updates every two seconds while the callback runs. "updates" and
+"polls" show callback activity; "fresh_queries" and "retry_calls" show retry
+work. "native_starts" records entry into the game's climbing state after a retry,
+not a completed traversal. Include the logs when reporting a problem.
+
+To remove: close the game, disable/remove Consistent Vaulting, then Purge and
+Deploy. Keep the shared loader enabled for any other dependent mods.
+
+Developed with assistance from GPT-6 Astra.
