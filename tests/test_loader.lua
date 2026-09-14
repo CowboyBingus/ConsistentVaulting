@@ -61,5 +61,48 @@ for i=1,20 do env.update() end
 assert(#logs==1 and env.ConsistentVaulting.updates==20 and env.ConsistentVaulting.polls==40)
 now=2.1;env.update();assert(#logs==2 and logs[2]:find('updates=21',1,true))
 assert(logs[2]:find('polls=41',1,true) and logs[2]:find('last_phase=before_update',1,true))
-env.shutdown();assert(#logs==3 and logs[3]:find('stopped',1,true))
+-- Probe evidence survives waiting states with its original time and origin.
+local fixture=env.ConsistentVaulting
+fixture.context_reprojections=4;fixture.reprojected_retries=2;fixture.reprojected_starts=1
+fixture.step_report_retries=3;fixture.step_report_starts=2
+fixture.last_retry_reason='native_context_changed_before_commit'
+fixture.candidate_results={retained_query_reused=1,no_usable_assisted_candidate=2}
+fixture.candidate_trace={time=1,root={1,2,3},direction={0,1,0},ground=true,
+    result='no_usable_assisted_candidate',passes={ordinary={},slope={},raised={
+        {slot=2,count=1,unit=11163,height=2.35,max_height=2.25,normal_z=.7852,normal_threshold=.707107,
+            source_height=2.41,target_height=.4,position={1,2,5.35},result='height'}}}}
+now=4.2;env.update()
+assert(#logs==3 and logs[3]:find('probe_age_seconds=3.200',1,true))
+assert(logs[3]:find('context_reprojections=4\n',1,true) and logs[3]:find('reprojected_retries=2\n',1,true)
+    and logs[3]:find('reprojected_starts=1\n',1,true)
+    and logs[3]:find('last_retry_reason=native_context_changed_before_commit\n',1,true))
+assert(logs[3]:find('step_report_retries=3\n',1,true) and logs[3]:find('step_report_starts=2\n',1,true))
+assert(logs[3]:find('probe_native_mover=1.000000,2.000000,3.000000',1,true))
+assert(logs[3]:find('candidate_result_retained_query_reused=1',1,true))
+assert(logs[3]:find('probe_raised_slot_2=count:1 unit:11163 height:2.350000 max:2.250000',1,true))
+assert(logs[3]:find('result:height',1,true))
+fixture.raised_trace=fixture.candidate_trace
+fixture.candidate_trace={time=4,root={10,20,30},direction={0,1,0},ground=true,
+    result='ordinary_candidate_retained',passes={ordinary={},slope={},raised={}}}
+now=6.3;env.update()
+assert(#logs==4 and logs[4]:find('probe_scope=last_raised_search',1,true))
+assert(logs[4]:find('probe_native_mover=1.000000,2.000000,3.000000',1,true))
+env.shutdown();assert(#logs==5 and logs[5]:find('stopped',1,true))
+-- Every terminal path must use unified cleanup, including an apply exception
+-- after the assistance module has acquired a lease.
+for _,failure in ipairs({'shutdown','apply_exception','apply_rejection','update_exception'}) do
+    local cleaned=0
+    patch.stop=function(_,_,_,s)cleaned=cleaned+1;s.slope_lease=nil;s.pending=nil;return true end
+    patch.apply=function(_,_,_,s)
+        s.slope_lease={};s.pending={}
+        if failure=='apply_exception' then error('slope fixture failure') end
+        if failure=='apply_rejection' then return false,'slope fixture rejected',false end
+        return true,'observing',true
+    end
+    env=environment({api=2,version=6})
+    if failure=='update_exception' then env.update=function()error('native update fixture failure')end end
+    install(env);pcall(env.update)
+    if failure=='shutdown' then env.shutdown() end
+    assert(cleaned==1 and env.ConsistentVaulting.slope_lease==nil and env.ConsistentVaulting.pending==nil,failure)
+end
 print('PASS: loader version/build gates, duplicate load, update/shutdown tuples, failure isolation and throttled heartbeat')

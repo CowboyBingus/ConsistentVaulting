@@ -150,12 +150,21 @@ return function()
         local query=ffi.cast('uint32_t (*)(uint32_t,uint32_t,uint32_t,uint32_t,uint32_t,const void *,void *,uint32_t)',exe+0x7fe0a0)
         local drive=ffi.cast('void (*)(void *,float)',game+0xa883f0)
         local detect=ffi.cast('void (*)(void *,float)',game+0xa8a710)
+        local override=ffi.cast('void (*)(void *,const void *,const void *)',game+0x832d40)
         local function aligned(size)
             local storage=ffi.new('uint8_t[?]',size+15)
             local address=tonumber(ffi.cast('uintptr_t',storage))
             return storage,storage+(16-address%16)%16
         end
         local native={}
+        function native.ensure_override(manager,entity)
+            assert(api.read(game+0x832d40,16)=='\072\137\092\036\008\072\137\108\036\016\072\137\116\036\024\087',
+                'Native avatar override routine changed')
+            -- 510370 reads start/count at +4/+8. An empty modifier leaves all
+            -- fields unchanged; 832d40 creates the entity-owned record if absent.
+            local empty=ffi.new('uint32_t[3]')
+            override(manager,entity,empty)
+        end
         local function f32(n) return tonumber(ffi.new('float[1]',n)[0]) end
         function native.actor(id)
             if id==0xffffffff or valid(id)==0 then return {valid=false} end
@@ -195,16 +204,29 @@ return function()
             -- Stage zero only performs the original approach search and writes
             -- its new geometry into this private copy; it cannot start a vault.
             detect(copy,0)
-            if ffi.cast('uint32_t *',copy+4)[0]~=1 then return false end
+            if ffi.cast('uint32_t *',copy+4)[0]~=1 then return false,'native_approach_blocked' end
             for offset=0x1e8,0x210,4 do
                 local previous=ffi.new('float[1]')
                 ffi.copy(previous,controller_bytes:sub(offset+1,offset+4),4)
                 local current=tonumber(ffi.cast('float *',copy+offset)[0])
                 local delta=math.abs(current-tonumber(previous[0]))
-                if delta~=delta or delta>0.02 then return false end
+                if delta~=delta or delta>0.02 then
+                    local fresh=ffi.string(copy,0x2b0)
+                    assert(owner~=nil)
+                    return false,'native_approach_geometry_changed',fresh
+                end
             end
             assert(owner~=nil)
             return true
+        end
+        function native.query_basis(direction)
+            local owner,matrix=aligned(64)
+            local forward=ffi.new('float[3]',direction)
+            local up=ffi.new('float[3]',{0,0,1})
+            basis(matrix,forward,up)
+            local bytes=ffi.string(matrix,64)
+            assert(owner~=nil)
+            return bytes
         end
         function native.refresh_query(record,world)
             assert(#record==128,'Invalid query descriptor')

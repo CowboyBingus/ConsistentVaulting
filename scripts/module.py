@@ -8,13 +8,15 @@ from archive import LUA, EXE_SHA, GAME_DLL_SHA, resource_hash
 def build_module(root, build, module_name, patch_name, revision):
     build.mkdir(parents=True, exist_ok=True)
     module = ''
-    for variable, filename in [('create_api', 'windows_api.lua'), ('patch', patch_name),
+    for variable, filename in [('create_api', 'windows_api.lua'), ('patch', patch_name), ('assistance', 'slope_assist.lua'),
                                ('install_loader', 'archive_loader.lua')]:
         code = (root / 'src' / filename).read_text(encoding='utf-8')
         for forbidden in ('VirtualProtect', 'FlushInstructionCache', 'CreateRemoteThread', 'LoadLibrary'):
             if forbidden in code:
                 raise ValueError(f'Unsupported native modification API in {filename}: {forbidden}')
         module += f'local {variable} = (function()\n{code}\nend)()\n'
+    module += 'patch.assistance = assistance\n'
+    module += 'assistance.candidate = patch.assist_candidate\n'
     module += f"install_loader(create_api, patch, {{revision = '{revision}', "
     module += f"exe_sha256 = '{EXE_SHA}', game_sha256 = '{GAME_DLL_SHA}'" + '})\n'
     path, output = build / 'mod.wrapper.lua', build / 'mod.ljbc'

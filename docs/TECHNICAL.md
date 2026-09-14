@@ -1,57 +1,74 @@
-# Local vault query processing
+# Implementation and validation
 
-The implementation uses the existing Lua resource packaging and shared-loader API. Resource `mods/cowboybingus/consistent_vaulting` belongs only to this gameplay package; Bingus Shared Loader loader-v4 discovers it before the supported overlay module. The loader's manager GUID and API 1 remain unchanged.
+## Supported runtime
 
-The original proposed control-flow fix is implemented through candidate data: earlier unusable hits are hidden from the existing selector, and a physically validated metadata fallback uses the selector's existing no-actor representation in that local query. No global actor flags or native instructions change.
+The module is locked to Steam build 24826606 / EXE 1.8.45317.0 and the module hashes in `scripts/archive.py`. It loads as `mods/cowboybingus/consistent_vaulting` through Bingus Shared Loader loader-v4 or newer / API 1 or newer. The resource name and mod-manager GUID are compatibility identifiers.
 
-## Scope and writes
+The package supplies stripped LuaJIT bytecode. It invokes existing engine functions through FFI and uses existing writable private data. It installs no custom DLL, executable-memory allocation, instruction patch or protection change.
 
-The player manager at game.dll global RVA `0x276c190` supplies the local player's unit reference. The entity-owner and avatar-manager maps resolve its current avatar and controller; index zero and ownership alone are never used to select a target. Mission state, resource identity, ownership, registry equality, controller entity ID, and current manual input must agree.
+## Local ownership and lifetime
 
-Data-v2 supports stage 2 and the consumed stage 3. Every descriptor must point into the resolved controller, use the verified filter/type, ignore the correct avatar engine unit, and have one-result capacity. Stage 2 requires a completed enclosing worker range. Stage 3 requires a zero scheduler count and all eight worker completion flags set. Retained descriptors remain bounded to 2,048 slots and must individually match the local controller; a zero count alone does not establish ownership. Query records and job ranges are rechecked before writes.
+The player manager supplies the local unit reference. Entity and avatar maps resolve the controller, effective settings and mover. Mission state, entity resource, ownership, registry equality, controller identity and manual input must agree. Index zero is not assumed to identify the local player.
 
-The original stage-2 path writes eight-byte unit/actor pairs at `controller + 0x4c + slot * 44`. The stage-3 retry can write one freshly cast 44-byte hit, clear the unit fields of the other nine hits, and temporarily change the four-byte phase from 3 to 2. The maximum direct write footprint is 120 bytes, all within the resolved local controller. Query IDs, scheduler records/counts, shared actor flags and settings are never written. The Windows adapter requires existing committed `MEM_PRIVATE / PAGE_READWRITE` storage. The original native routine owns subsequent animation/state changes.
+Completed stage-2 queries and retained stage-3 queries are supported. Every descriptor must point into the resolved local controller, use the expected filter/type, ignore the correct avatar, and have one-hit capacity. Stage 3 requires an idle scheduler and all eight workers complete. Reused descriptors or unavailable snapshots are skipped.
 
-Original bytes are retained while the query epoch remains current. Stage-2 edits are restored before reevaluation; stage-3 edits are restored immediately after the native retry. The late epoch excludes the intentionally changed phase but includes local identity, query IDs, descriptors and idle worker data. A changed entity or reused query is never restored by stale address. Failed or partial writes stop processing and attempt restoration within that epoch. Shutdown and original-update exceptions also attempt restoration. Snapshot checks are not a general synchronization primitive; native/Lua scheduling and teardown must be exercised in-game.
+Writes are guarded by the original entity/query epoch and byte values. Stage-2 edits are restored before reevaluation; stage-3 edits are restored immediately after the original native retry. Changed identity or reused storage prevents restoration by stale address. Failed or partial writes attempt rollback. Shutdown and original-update exceptions use the same cleanup.
 
-## Candidate policy
+## Manual candidate selection
 
-The module prefers the first candidate that passes the normal surface test, actor motion limit, current ground/air height allowance, and native exit validation without the manual metadata veto. It considers a vetoed candidate only if no such candidate succeeds. It does not relax surface angle, motion or height values. A working first candidate requires no write.
+Fresh candidates must pass the current surface-angle threshold, actor-motion limit, ground/air height allowance, reach and native exit validation. An eligible candidate without the manual metadata veto is preferred. Otherwise, one validated fallback uses the native selector's existing no-actor representation only in that local query result. Shared obstacle flags are unchanged.
 
-The effective AvatarComponent record is resolved through its per-avatar override map, with a checked resource-level fallback. Settings are read only. The motion and height comparisons retain float32 rounding. Automatic input alone cannot commit an edit. During active manual input, the lower native automatic-step prepass also sees the prepared candidate; the game retains its normal decision between stepping and vaulting.
+The existing climbing state, pending readiness at controller +532 and the original A88020/A88160 eligibility masks prevent a retry. Controller +533 reports an automatic step; it can remain set when a later lower-candidate search finds nothing. The native manual eligibility routine does not use that report as a veto. The mod preserves it without directly setting or clearing it.
 
-## Consumed-query retry
+During active manual input, stage-3 retries run at most ten times per second. Only previously nonempty slots can supply a refreshed result for consumption because native result counts remain unchanged. The original automatic-step prepass also sees the selected result; the engine owns the choice between stepping and vaulting.
 
-The late path first checks the original A88020/A88160 state masks and rejects existing climbing/step readiness. While manual input remains active it attempts at most ten retries per second. It copies the controller into private aligned storage, sets only that copy to stage zero and calls the original approach detector with zero dt. The detector must produce stage 1 and all eleven approach-geometry floats must remain within 0.02 of the retained batch. This preserves the original approach search when the player moves, turns or encounters changed collision.
+## Fresh approach geometry
 
-Previously nonempty local query slots are then cast synchronously into private buffers using the original worker descriptor layout, filter, shape/type, ignored unit and one-hit capacity. Previously empty slots are excluded because native result counts are preserved. Query endpoints and the selected hit must remain within 1.5 horizontal units of the current mover, with conservative vertical and forward bounds. These are additional stale-data guards; the original approach, height, normal, motion and exit checks still apply.
+A private aligned controller copy enters stage zero and runs the original approach detector with zero delta time. Controller consumption requires a successful stage-1 approach.
 
-After snapshot rechecks, one fresh validated hit is exposed, other hit units are hidden and the phase is temporarily set to 2. Calling the original local driver at `0xa883f0` with zero dt preserves its eligibility, selection, final exit validation and start routine without advancing movement timers a second time. Original query bytes are restored afterward. No readiness or animation bit is forced directly. An observed new native climbing bit increments `native_starts`; this measures state entry, not completion or network acceptance.
+When any of the eleven geometry floats differs by more than 0.02 game units from the retained batch, the mod reconstructs private descriptors using the recovered native producer formula. It validates identity, finite dimensions and the native horizontal forward/up basis. Ten source positions interpolate between the approach endpoints; each box uses half the native width, one twentieth of the endpoint separation, and 0.05 vertical half-extent. Sweep endpoints follow the native vertical span and offsets with float32 rounding.
 
-## Existing native validation calls
+Only private matrix/translation, dimensions and sweep targets change. The scheduler, real controller geometry, output ownership, filters, ignored unit and capacity are preserved. Rebuilt geometry must pass another native approach check before commitment.
 
-Unlike the simplest data-setting mods, this module calls existing game functions through LuaJIT FFI. It creates no native callback, DLL, executable allocation, or instruction patch. These calls are not mocked in production:
+Fresh queries use the original synchronous physics API. Endpoints and the chosen hit must stay within 1.5 horizontal units of the current native mover, with bounded vertical displacement and a forward-direction check. After collision and exit validation, the local result is temporarily exposed and the phase becomes 2. The original driver runs with zero delta time, preserving its own eligibility, final validation and start logic.
 
-| Function | RVA |
+## Bounded assistance
+
+A fresh manual press creates a 1.25-second candidate-search window. Merely pressing climb makes no movement or settings change. Two mutually exclusive modes are available.
+
+| Mode | Candidate requirement | Temporary changes |
+| --- | --- | --- |
+| Higher top | Grounded; top 0.5-2.5 units above the native mover; original angle threshold; valid motion, reach and exit | Local ground-climb height from 1.95 to 2.5 |
+| Steep surface | Valid candidate up to 65 degrees within the original height; native motion, reach and exit checks | Local slide entry 65 degrees, exit 60 degrees, character slope support up to 65 degrees; walking cap only after native climbing starts |
+
+The higher search starts above its accepted ceiling with room for the collision box thickness and its horizontal footprint on a permitted sloped top. It may discover a higher top after the original low approach rejects, but the engine still reruns its own approach/headroom pipeline after any height allowance. Its raised hit is never injected into the controller. Air-climb height and movement speed stay unchanged in this mode.
+
+Steep support is limited to three horizontal and three vertical game units from activation. Climbing has an eight-second bound. Supported steep ground within that area can retain assistance; flat ground ends it after 0.35 seconds, lost support after 0.25 seconds. Leaving the area, incompatible states, identity changes or conflicting settings changes also end assistance. A lower preexisting speed cap is respected. The separate 70-degree support/contact limit remains untouched.
+
+Settings are resolved through the per-avatar override map. If no override exists, the original modifier routine receives an empty descriptor and may create an engine-owned 852-byte local copy and its registry entries. Shared templates are never modified. Native destruction retains ownership of those records.
+
+## Write footprint and native calls
+
+The query path temporarily writes at most 120 bytes: one 44-byte selected hit, up to nine eight-byte unit/actor pairs and a four-byte phase. Steep assistance adds at most 16 bytes across four local fields; higher-top mode instead adds four bytes. The maximum direct footprint is 136 bytes. Engine-owned override creation has separate allocation/registry effects.
+
+| Existing function | Relative virtual address |
 | --- | --- |
-| Actor validity / flags / motion vectors | EXE `0x79c290`, `0x79e320`, `0x79e490` |
-| Local mover lookup / position / dimensions | EXE `0x7d3280`, `0x7d40b0`, `0x7d4e70` |
-| Direction/up basis and quaternion extraction | game.dll `0x1490a30`, `0x148c030` |
-| Exit and route classification | game.dll `0xa8b8a0` |
-| Approach detector on private controller copy | game.dll `0xa8a710` |
-| World ID / synchronous physics query | EXE `0x7a48f0`, `0x7fe0a0` |
-| Original local eligibility/check/start driver | game.dll `0xa883f0` |
+| Actor validity / flags / motion | EXE 0x79c290 / 0x79e320 / 0x79e490 |
+| Mover lookup / position / dimensions | EXE 0x7d3280 / 0x7d40b0 / 0x7d4e70 |
+| Direction/up basis / quaternion | game.dll 0x1490a30 / 0x148c030 |
+| Native approach detector | game.dll 0xa8a710 |
+| World ID / synchronous shape query | EXE 0x7a48f0 / 0x7fe0a0 |
+| Exit classification / original local driver | game.dll 0xa8b8a0 / 0xa883f0 |
+| Local settings override creation | game.dll 0x832d40 |
 
-The runtime verifies both supported module hashes, live physics/mover API bindings, and the exit validator entry bytes. SIMD buffers are explicitly aligned. RCX is unused by the captured exit validator; RDX receives the resolved local avatar entity, R8 the candidate position, and R9 its orientation. Only results 3 and 4 qualify; 5 rejects. The original engine subsequently runs its own final validation and animation path.
+Both module hashes, live physics/mover bindings and selected function entry bytes are checked. Native SIMD buffers are aligned. Exit results 3 and 4 qualify; 5 rejects. This validator is not a full swept-animation trajectory guarantee.
 
-The worker lifecycle was traced in `0x14acf80` and `0x14acdc0`: eight ranges at scheduler `+0x40004`, each holding start/end/done, and 128-byte query records with clamped result count at `+0x76`. Matching a completed range plus a nonempty freshly populated hit avoids treating a submitted empty result buffer as usable. Query/job consistency is checked again before edits.
+## Diagnostics and verification
 
-## Validation and limits
+The local heartbeat writes at most every two seconds during normal updates and flushes on terminal paths. `native_starts` counts immediate climbing-state entries after retries, not completed traversals. `step_report_retries/starts` describe retries while the retained automatic-step report is set. `context_reprojections` counts private geometry rebuilds; `reprojected_retries/starts` track their native retries and entries. `last_retry_reason` records the last consumed-query outcome.
 
-Tests use the real Lua snapshot reader and writer against bounded synthetic allocations, including a remote avatar at index zero and local avatar at index one. They cover preferred alternatives, metadata fallback, automatic-only input, motion/height/exit rejection, worker completion, pointer/identity mismatch, mission transitions, input release, buffer reuse, failed/partial writes, restoration and real Windows memory permissions. Startup tests cover build/loader gates, callback tuples, shutdown, exceptions and failure isolation. Package tests verify sole resource ownership, dependency metadata, hashes and absence of executable payloads.
+Candidate and probe diagnostics retain the last search outcome, limits, returned heights/normals, motion and exit results, plus age and native mover origin. They can describe an earlier position; inspect age and position before attributing a trace. Logs remain local and are excluded from source control and packages.
 
-Native physics calls are mocked in the behavioral fixtures; their successful execution inside the game is **not** established by passing offline tests. During the September 12 mission capture, 17,410 external samples included 15,633 stage-3 samples, 1,727 stage-1 samples and only 50 stage-2 samples. Manual input was active in 4,305 samples; data-v1 logged no observed queries. A later read-only snapshot confirmed stage 3, scheduler count zero, all workers complete and ten retained descriptors still owned by the local controller. This supports the new integration point but does not validate executing the revised native calls in-game.
+Tests exercise the actual Lua snapshot/patch logic against bounded synthetic allocations, including a separate remote avatar, identity changes, query reuse, input release, native-check rejection, retained step reports, changed approaches, rollback and cleanup. Forty native geometry fixtures retain independent expected float results while using synthetic ownership addresses and unit identifiers. Rebuilt geometry matches the expected source/size/target floats; basis comparisons allow the native quaternion roundtrip's floating-point difference.
 
-The runtime log now refreshes every two seconds even when status is unchanged. `updates`, `polls`, phase counters, `fresh_queries`, `retry_calls` and `native_starts` distinguish callback liveness, accepted snapshots, collision refreshes, retry invocation and observed climbing-state entry. Terminal failures and shutdown flush immediately.
-
-Before promoting data-v2, test manual vaults against ordinary, flagged, beveled, obstructed, moving and excessive-height obstacles; confirm animation and unsupported landings still behave correctly. Then test death/reinforcement, mission transitions, and both hosting and joining with an unmodified teammate. Check that the teammate's own vault behavior remains unchanged and that the host does not correct the local player's traversal. This package is an offline-verified gameplay candidate, not a gameplay-verified release.
+Native physics, override creation and driver calls are modeled in behavioral tests. Offline checks do not prove live traversal or host/client acceptance. The current retained-report and geometry recovery paths still require in-game confirmation. Shared-loader/startup checks exercise integration separately from gameplay and rendering. Build and audit instructions are in [CONTRIBUTING.md](../CONTRIBUTING.md).

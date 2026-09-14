@@ -1,0 +1,12 @@
+{
+  "dependencies": [
+    {
+      "name": "LuaJIT",
+      "path": "tools/src/LuaJIT",
+      "url": "https://github.com/LuaJIT/LuaJIT.git",
+      "commit": "24c20c94e7db195b640854619577441f9b4bc6be",
+      "license": "MIT",
+      "purpose": "Compile Windows x64 non-GC64 Lua bytecode and run offline tests"
+    }
+  ]
+}

@@ -1,40 +1,36 @@
-Consistent Vaulting - data-v3 prerelease
+Consistent Vaulting
+
 Requires Bingus Shared Loader loader-v4 or newer / API 1 or newer.
 Supported: Steam build 24826606 / EXE 1.8.45317.0.
 
-1. Close Helldivers 2 before installing.
-2. Import ConsistentVaulting.zip and the updated BingusSharedLoader.zip into
-   Arsenal or HD2MM. Replace the previous loader; keep only one copy enabled.
-3. Enable both. In Arsenal's default priority mode, place Bingus Shared Loader
-   LAST (bottom of the list). If first-mod priority is enabled, place it first.
-4. Purge and Deploy, then launch the game normally.
+1. Close Helldivers 2.
+2. Import ConsistentVaulting.zip into Arsenal or HD2MM. Replace any earlier
+   copy so only one Consistent Vaulting package is enabled.
+3. Install and enable the compatible Bingus Shared Loader package separately.
+4. Under Arsenal's default priority, place the loader last. If first-mod
+   priority is enabled, place it first.
+5. Purge and Deploy, then launch the game normally.
 
-If upgrading from data-v1 or data-v2, replace ConsistentVaulting.zip; keep
-loader-v4 or newer. data-v3 accepts newer loader APIs.
+Use the normal manual-climb input. Release before retrying an expired attempt.
+A fresh input opens a short search window; usable collision and native exit
+checks are required before a retry or temporary allowance is granted.
 
-Only the installing player's avatar is selected for changes. Teammates do not
-need this package. Host/client behavior has not yet been validated in gameplay.
-Hold/use your normal manual climb input; the mod adds no keybind or menu.
+Higher-top assistance supports eligible grounded tops up to 2.5 game units.
+Steep-surface assistance supports validated slopes up to 65 degrees within
+the original climb height, with walking speed after assisted climbing begins.
+These modes are separate. Pressing climb in open space does not slow movement.
 
-The mod tries later valid query candidates and can tolerate an obstacle's
-manual-climb metadata veto after existing physical exit checks pass. It leaves
-height/reach settings, shared obstacle flags and collision filters unchanged.
-It refreshes completed queries in private buffers and calls the original local
-vault routine with zero elapsed time. Temporary edits are limited to your
-avatar's query results and phase. It does not install a DLL, patch executable
-instructions or change page protection.
+Only the installing player's avatar receives the runtime changes.
+Missing collision, excessive height or blocked clearance can still prevent
+a climb.
 
-Offline tests pass. The revised native calls, animation and host/client behavior
-remain to be tested in-game. This is not a gameplay-verified release. No mod can
-guarantee that every visually plausible obstacle is usable.
+Logs are written locally as ConsistentVaulting.log and BingusSharedLoader.log
+under the Windows LOCALAPPDATA directory. They are not sent by the mod.
+Review logs before sharing: diagnostics can contain session-specific values.
+Developer validation status and log fields are documented in docs/TECHNICAL.md
+in the source repository.
 
-Logs: %LOCALAPPDATA%/ConsistentVaulting.log and BingusSharedLoader.log.
-The vault log updates every two seconds while the callback runs. "updates" and
-"polls" show callback activity; "fresh_queries" and "retry_calls" show retry
-work. "native_starts" records entry into the game's climbing state after a retry,
-not a completed traversal. Include the logs when reporting a problem.
-
-To remove: close the game, disable/remove Consistent Vaulting, then Purge and
-Deploy. Keep the shared loader enabled for any other dependent mods.
+To uninstall, close the game, disable this mod, then Purge and Deploy.
+Keep the shared loader if other enabled mods require it.
 
 Developed with assistance from GPT-6 Astra.
