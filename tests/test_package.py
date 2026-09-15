@@ -14,7 +14,7 @@ with zipfile.ZipFile(sys.argv[1]) as package:
     expected|={'manifest.json','ConsistentVaulting-manifest.json','ConsistentVaulting-README.txt','thumbnail.png'}
     assert set(names)==expected and len(names)==len(expected)
     manager=json.loads(package.read('manifest.json'))
-    assert manager['Name']=='Consistent Vaulting' and manager['Options'][0]['Include']==['data']
+    assert manager['Name']=='Consistent Vaulting - v8' and manager['Options'][0]['Include']==['data']
     assert manager['Guid']=='d4710210-3515-4f69-b6c5-b1d3c653e784'
     assert manager['IconPath']==manager['Options'][0]['Image']=='thumbnail.png'
     width,height=inspect_png(package.read('thumbnail.png'))['dimensions']

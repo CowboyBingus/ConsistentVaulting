@@ -1,10 +1,10 @@
-Consistent Vaulting
+Consistent Vaulting - v8
 
 Requires Bingus Shared Loader loader-v4 or newer / API 1 or newer.
 Supported: Steam build 24826606 / EXE 1.8.45317.0.
 
 1. Close Helldivers 2.
-2. Import ConsistentVaulting.zip into Arsenal or HD2MM. Replace any earlier
+2. Import Consistent-Vaulting-v8.zip into Arsenal or HD2MM. Replace any earlier
    copy so only one Consistent Vaulting package is enabled.
 3. Install and enable the compatible Bingus Shared Loader package separately.
 4. Under Arsenal's default priority, place the loader last. If first-mod
