@@ -56,6 +56,10 @@ env.io={open=function()
     local chunks={}
     return {write=function(_,s)chunks[#chunks+1]=s end,close=function()logs[#logs+1]=table.concat(chunks)end}
 end}
+env.CowboyBingusModLoader.open_log=function(name)
+    assert(name=='ConsistentVaulting.log')
+    return env.io.open('fixture/CowboyBingus/Helldivers2/Logs/'..name,'w')
+end
 install(env);assert(#logs==1)
 for i=1,20 do env.update() end
 assert(#logs==1 and env.ConsistentVaulting.updates==20 and env.ConsistentVaulting.polls==40)

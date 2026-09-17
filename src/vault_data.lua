@@ -63,7 +63,7 @@ function M.snapshot(api,game,exe,state)
         return nil
     end
     local mode=read(global(0x276c3d0),0x44)
-    if u32(mode,8)==0 or u32(mode,0x40)~=1 then return nil,'waiting_for_mission' end
+    if u32(mode,8)==0 or u32(mode,0x40)<1 or u32(mode,0x40)>7 then return nil,'waiting_for_mission' end
     local pm=global(0x276c190,true)
     local counts=read(pm+0x84,8)
     assert(u32(counts,0)<=4 and u32(counts,4)<=4,'Unsupported player count')

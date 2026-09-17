@@ -138,6 +138,14 @@ end
 local remote_before=ffi.string(remote,0x1238)
 local passed=0
 local function done() assert(ffi.string(remote,0x1238)==remote_before,'Remote controller changed');passed=passed+1 end
+for mode=1,7 do
+    reset({{actor=2},{}});actor_flags[2]=0x100000;u(mission,0x40,mode)
+    local state={};run(state);assert(state.pending,'vault rejected mission mode '..mode);done()
+end
+for _,mode in ipairs({0,8,0xffffffff})do
+    reset({{actor=2},{}});actor_flags[2]=0x100000;u(mission,0x40,mode);run({});assert(writes==0);done()
+end
+reset({{actor=2},{}});actor_flags[2]=0x100000;u(mission,0x40,2);u(mission,8,0);run({});assert(writes==0);u(mission,8,1)
 
 reset({{},{actor=2}});local state={};run(state);assert(writes==0,'Working first candidate changed');done()
 reset({{actor=2},{}});actor_flags[2]=0x100000;state={};run(state)

@@ -38,7 +38,7 @@ function A.snapshot(api,game,exe,key)
     local ref
     if key then ref=key.ref else
         local mode=read(global(0x276c3d0),0x44,true)
-        if u(mode,8)==0 or u(mode,0x40)~=1 then return nil,'outside_mission' end
+        if u(mode,8)==0 or u(mode,0x40)<1 or u(mode,0x40)>7 then return nil,'outside_mission' end
         local pm=global(0x276c190)
         local counts=read(pm+0x84,8)
         assert(u(counts)<=4 and u(counts,4)<=4,'Unsupported player count')

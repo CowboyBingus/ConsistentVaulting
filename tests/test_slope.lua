@@ -110,6 +110,15 @@ local function baseline()
     assert(math.abs(number(cells.slope)-math.cos(50*math.pi/180))<.000001)
     assert(math.abs(number(cells.height)-1.95)<.000001)
 end
+for mode=1,7 do
+    reset();u(mission,0x40,mode);local state={};arm(state);assert(A.stop(api,g,e,state));baseline();done()
+end
+for _,mode in ipairs({0,8,0xffffffff})do
+    reset();u(mission,0x40,mode);local state={};step(state);avatars[input]=1;step(state)
+    assert(not state.slope_lease and writes==0);done()
+end
+reset();u(mission,0x40,2);u(mission,8,0);local outside={};step(outside);avatars[input]=1;step(outside)
+assert(not outside.slope_lease and writes==0);u(mission,8,1)
 reset();local state={};step(state);assert(writes==0);done()
 reset();state={};avatars[input]=1;step(state);assert(not state.slope_lease and writes==0);done()
 reset();state={};arm(state)

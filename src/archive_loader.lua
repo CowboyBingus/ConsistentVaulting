@@ -14,9 +14,8 @@ return function(create_api,patch,build)
         last_report=now
         print('[ConsistentVaulting] '..build.revision..': '..status)
         pcall(function()
-            local directory=os.getenv('LOCALAPPDATA')
-            if not directory then return end
-            local file=io.open(directory..'/ConsistentVaulting.log','w')
+            local logger=rawget(_G,'CowboyBingusModLoader')
+            local file=logger and logger.open_log and logger.open_log('ConsistentVaulting.log')
             if not file then return end
             file:write(build.revision..'\n'..status..'\n')
             file:write('observed_queries='..state.observed_queries..'\nprepared='..state.prepared
