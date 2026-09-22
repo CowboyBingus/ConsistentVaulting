@@ -1,3 +1,10 @@
+# v8.2
+
+- Disable periodic diagnostic file writes and console output by default.
+- Keep startup, failure and shutdown reports available.
+- Preserve vaulting checks and movement behavior.
+- Offline regression checks cover this update; live frame-time verification remains pending.
+
 # v8.1
 
 - Enables vaulting corrections and slope assistance on defense and other supported mission types.

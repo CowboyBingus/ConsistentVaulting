@@ -51,6 +51,7 @@ local now,logs=0,{}
 api.time=function()return now end
 patch.apply=function()return true,'waiting_for_vault_query',false end
 env=environment({api=1,version=5})
+env.CowboyBingusDiagnostics=true
 env.os={getenv=function()return 'fixture' end}
 env.io={open=function()
     local chunks={}
@@ -110,3 +111,26 @@ for _,failure in ipairs({'shutdown','apply_exception','apply_rejection','update_
     assert(cleaned==1 and env.ConsistentVaulting.slope_lease==nil and env.ConsistentVaulting.pending==nil,failure)
 end
 print('PASS: loader version/build gates, duplicate load, update/shutdown tuples, failure isolation and throttled heartbeat')
+
+-- Routine gameplay must not write diagnostics unless explicitly enabled.
+for _,diagnostics in ipairs({false,true})do
+    local now,opens,profiles=0,0,0
+    local e=setmetatable({print=function()end},{__index=_G});e._G=e
+    e.CowboyBingusDiagnostics=diagnostics
+    e.CowboyBingusModLoader={api=1,version=99,open_log=function()
+        opens=opens+1;return {write=function()end,close=function()end}
+    end}
+    e.update=function()return 1,nil,3 end;e.shutdown=function()return 4,nil,6 end
+    local api={time=function()return now end,module=function(n)return n or 'exe'end,
+        module_hash=function()return 'hash'end,bind=function()return {}end,read=function()return ''end}
+    local patch={interval=1/30,apply=function()return true,'waiting_for_mission',false end,
+        profiler={new=function()profiles=profiles+1;return {}end},stop=function()return true end,cleanup=function()return true end}
+    setfenv(assert(loadfile(source..'/archive_loader.lua')),e)()(function()return api end,patch,
+        {revision='fixture',game_sha256='hash',exe_sha256='hash'})
+    local startup=opens
+    for i=1,600 do now=i/60;local a,b,c=e.update(1/60);assert(a==1 and b==nil and c==3)end
+    assert(diagnostics and opens>startup or not diagnostics and opens==startup,'routine log writes require opt-in')
+
+    e.shutdown();assert(opens>startup,'shutdown report remains available')
+end
+print('PASS: silent default, opt-in diagnostics, shutdown report and callback returns')

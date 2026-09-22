@@ -11,7 +11,7 @@ from module import build_module
 from package import package_release
 
 MODULE='mods/cowboybingus/consistent_vaulting'
-REVISION='data-v8.1'
+REVISION='data-v8.2'
 FORBIDDEN=('VirtualAlloc','VirtualProtect','FlushInstructionCache','CreateRemoteThread',
            'RtlAddFunctionTable','RtlDeleteFunctionTable','LoadLibrary')
 def run(args,**kwargs):
@@ -40,7 +40,7 @@ def main():
         'description':'Makes manual vaulting more forgiving with fresh obstacle checks, higher ledge detection and controlled steep-surface support for your Helldiver. Requires Bingus Shared Loader v4 or newer / API 1 or newer.',
         'game_exe_sha256':EXE_SHA,'game_dll_sha256':GAME_DLL_SHA,'deployment_files':files,
         'files':{p:sha((ROOT/p).read_bytes()) for p in files.values()},
-        'requires':[{'name':'Bingus Shared Loader','api':1,'revision':'loader-v14'}],
+        'requires':[{'name':'Bingus Shared Loader','api':1,'revision':'loader-v4'}],
         'module':MODULE,'runtime_verified':False,'status':'offline_verified_step_report_recovery_and_fresh_geometry_gameplay_pending',
         'executable_memory_changed':False,'custom_dlls':0,'boot_replaced':False,
         'write':{'target':'local avatar query data, per-avatar slope settings, movement speed cap and character-controller slope cosine','max_records':10,

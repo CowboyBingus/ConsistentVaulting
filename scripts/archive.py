@@ -5,7 +5,7 @@ from pathlib import Path
 import struct
 
 ROOT = Path(__file__).resolve().parents[1]
-GAME = Path(os.environ.get('HD2_GAME_ROOT', r'C:\Program Files (x86)\Steam\steamapps\common\Helldivers 2'))
+GAME = Path(os.environ.get('HD2_GAME_ROOT', Path(os.environ['ProgramFiles(x86)']) / 'Steam/steamapps/common/Helldivers 2'))
 LUA = Path(os.environ.get('HD2_LUAJIT', ROOT / 'tools/src/LuaJIT/src/luajit.exe'))
 EXE_SHA = 'A09FF52663E73B94FB0CAC0DCB5BA84FFD10ECF44F74A8921AC66AF923988CC3'
 GAME_DLL_SHA = 'CC75948D90FDFDE259DCB519E9933DB7FFA3CCB281CE4FB89E6B1B011557470C'

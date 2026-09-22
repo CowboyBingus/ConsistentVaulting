@@ -22,7 +22,7 @@ python -B scripts/build.py
 
 Set `HD2_GAME_ROOT` for a nonstandard installation or `HD2_LUAJIT` to an existing compatible compiler. The source needs no parent project, extracted boot resource, native decompilation or research capture. Build inputs are checked against the supported game hashes.
 
-In a standalone clone, output is `releases/Consistent-Vaulting-v8.1.zip`. Within the shared mod-development workspace, the existing packager selects that workspace's base `releases/` directory. No extra release directories are needed. Intermediate output stays in ignored `build/`; building does not install, launch or modify the game.
+In a standalone clone, output is `releases/Consistent-Vaulting-v8.zip`. Within the shared mod-development workspace, the existing packager selects that workspace's base `releases/` directory. No extra release directories are needed. Intermediate output stays in ignored `build/`; building does not install, launch or modify the game.
 
 The build compiles the module, runs query/geometry/slope/loader regressions, validates the package and audits its publication inventory. Behavioral tests can run without game files:
 
@@ -33,7 +33,7 @@ tools/src/LuaJIT/src/luajit.exe tests/test_slope.lua src
 tools/src/LuaJIT/src/luajit.exe tests/test_loader.lua src
 ```
 
-Before publication, use `python -B scripts/privacy_audit.py --git --history --zip releases/Consistent-Vaulting-v8.1.zip`, substituting the shared base ZIP path when appropriate. The scanner defines the exact source inventory and checks reachable Git history. Optional `--staged` also verifies the index bytes. Reports contain relative paths and hashes; sensitive matches are never printed.
+Before publication, use `python -B scripts/privacy_audit.py --git --history --zip releases/Consistent-Vaulting-v8.zip`, substituting the shared base ZIP path when appropriate. The scanner defines the exact source inventory and checks reachable Git history. Optional `--staged` also verifies the index bytes. Reports contain relative paths and hashes; sensitive matches are never printed.
 
 Keep logs, captures, dependency checkouts, binary game files and build output out of source control. Review the final diff and preserve existing public noreply Git identities. Release preparation does not publish, tag, push or rewrite repository history.
 

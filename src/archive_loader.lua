@@ -8,6 +8,7 @@ return function(create_api,patch,build)
         local changed=state.status~=status
         state.active=active
         state.status=status
+        if not force and rawget(_G,'CowboyBingusDiagnostics')~=true then return end
         local now=api and api.time and api.time() or 0
         if not force and last_report and now-last_report<2 then return end
         if not force and not changed and not (api and api.time) then return end

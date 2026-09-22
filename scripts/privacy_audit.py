@@ -14,6 +14,8 @@ import zlib
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_FILES = (
+    'publication-files.json',
+    'CHANGELOG.md',
     '.gitattributes', '.gitignore', 'CONTRIBUTING.md', 'INSTALL.txt', 'README.md',
     'THIRD_PARTY.md', 'dependencies.json',
     'assets/ARTWORK.md', 'assets/banner.png', 'assets/thumbnail.png',

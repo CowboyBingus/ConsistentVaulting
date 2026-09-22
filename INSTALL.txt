@@ -6,7 +6,7 @@ Logs: %LOCALAPPDATA%/CowboyBingus/Helldivers2/Logs
 
 
 
-Consistent Vaulting - v8.1
+Consistent Vaulting - v8.2
 
 
 
@@ -18,7 +18,7 @@ Supported: Steam build 24826606 / EXE 1.8.45317.0.
 
 1. Close Helldivers 2.
 
-2. Import Consistent-Vaulting-v8.1.zip into Arsenal or HD2MM. Replace any earlier
+2. Import Consistent-Vaulting-v8.2.zip into Arsenal or HD2MM. Replace any earlier
 
    copy so only one Consistent Vaulting package is enabled.
 
