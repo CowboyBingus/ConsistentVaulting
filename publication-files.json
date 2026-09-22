@@ -10,7 +10,9 @@
   "assets/banner.png",
   "assets/thumbnail.png",
   "dependencies.json",
+  "docs/MIGRATION_VALIDATION.md",
   "docs/PRIVACY.md",
+  "docs/RELEASE_NOTES.md",
   "docs/TECHNICAL.md",
   "publication-files.json",
   "scripts/archive.py",
@@ -25,6 +27,7 @@
   "tests/test_geometry.lua",
   "tests/test_loader.lua",
   "tests/test_package.py",
+  "tests/test_raised_approach.lua",
   "tests/test_slope.lua",
   "tests/test_vault.lua"
 ]

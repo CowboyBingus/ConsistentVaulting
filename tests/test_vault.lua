@@ -22,16 +22,16 @@ local game,exe,pm,mode,owner,manager,scheduler,movement,camera=
     0x10000000,0x20000000,0x30000000,0x31000000,0x40000000,0x50000000,0x60000000,0x70000000,0x71000000
 local player_address=0x32000000
 local globals={}
-for _,rva in ipairs({0x276c3d0,0x276c190,0x276f0c0,0x276ca30,0x276c280,0x2770688}) do globals[rva]=region(game+rva,8) end
-p(globals[0x276c3d0],0,mode);p(globals[0x276c190],0,pm);p(globals[0x276f0c0],0,owner)
-p(globals[0x276ca30],0,manager);p(globals[0x276c280],0,movement);p(globals[0x2770688],0,camera)
+for _,rva in ipairs({0x33266a0,0x3326468,0x346bf98,0x3326d20,0x3326558,0x346d560}) do globals[rva]=region(game+rva,8) end
+p(globals[0x33266a0],0,mode);p(globals[0x3326468],0,pm);p(globals[0x346bf98],0,owner)
+p(globals[0x3326d20],0,manager);p(globals[0x3326558],0,movement);p(globals[0x346d560],0,camera)
 local players,mission,player=region(pm,0x440),region(mode,0x44),region(player_address,24)
 local avatars=region(manager,0x550000)
 local queries=region(scheduler,0x40070)
 local mv=region(movement,0x48e0)
 local cam=region(camera,0x40)
-local unitmap=region(owner+0xf21a88,20)
-local entities=region(owner+0xf31ad8,48)
+local unitmap=region(owner+0xf22ec8,20)
+local entities=region(owner+0xf32f18,48)
 local function map(header,o,address,key,index)
     p(header,o,address);u(header,o+8,16);u(header,o+12,0xffffffff);u(header,o+16,1)
     local rows=region(address,128)
@@ -51,7 +51,7 @@ p(players,0xe8,player_address);u(players,0x3a8,9);player[20]=1
 for i=0,1 do
     ffi.copy(entities+i*24,'\151\250\077\041\077\051\028\077',8)
     u(entities,i*24+8,i==0 and 111 or 222);u(entities,i*24+12,i==0 and 333 or 444);entities[i*24+20]=1
-    p(avatars,0x110+i*8,owner+0xf31ad8+i*24)
+    p(avatars,0x110+i*8,owner+0xf32f18+i*24)
 end
 u(avatars,0x6c,2);p(avatars,0x28,scheduler)
 local local_offset=0x53e1b8+0x1238
@@ -63,7 +63,8 @@ local input_offset=0x150+0xa7aec+0x1b68+14*32
 avatars[input_offset]=1
 local settings=avatars+0x547d24+0x354
 f(settings,0x98,45);f(settings,0x104,1.95);f(settings,0x108,1.4)
-local component_pointer=region(owner+0xf11778,8)
+f(settings,0x10c,.6)
+local component_pointer=region(owner+0xf12bb8,8)
 local component=region(0x72600000,1736);p(component_pointer,0,0x72600000)
 ffi.copy(component,entities+24,8);u(component,8,0)
 f(component+32,0x98,45);f(component+32,0x104,1.95);f(component+32,0x108,1.4)
@@ -76,7 +77,7 @@ local native={
         return {valid=true,flags=actor_flags[id] or 0,motion_squared=actor_speed[id] or 0}
     end,
     exit=function(entity,target,direction)
-        assert(entity==owner+0xf31ad8+24 and direction[2]==1)
+        assert(entity==owner+0xf32f18+24 and direction[2]==1)
         exit_calls=exit_calls+1
         return target[1]==13 and 5 or 3
     end,
@@ -202,7 +203,7 @@ run({});assert(writes==0);entities[24]=151;done()
 
 -- Reproduce the observed lifecycle: Lua sees consumed stage 3 and count zero,
 -- although this avatar's descriptors/result counts remain in the scheduler.
-local world_pointer=region(game+0x276f0c8,8);p(world_pointer,0,0x73000000)
+local world_pointer=region(game+0x346bfa0,8);p(world_pointer,0,0x73000000)
 local flags_offset=0x53e880+0x1238
 local now,retries,refreshes,refresh_miss,retry_reject=10,0,0,false,false
 api.time=function()return now end
@@ -219,7 +220,7 @@ native.retry=function(address)
     assert(read32(scheduler+0x40000)==0,'Retry modified scheduler count')
     retries=retries+1
     u(control,4,3)
-    if not retry_reject then u(avatars,flags_offset+12,0x40) end
+    if not retry_reject then u(avatars,flags_offset+12,0x200) end
 end
 api.writable_data=function(address,size)
     return address==controller+4 and size==4
@@ -258,7 +259,7 @@ late({{actor=2}});actor_flags[2]=0x100000;u(queries,0x4000c,0)
 assert(run({})=='waiting_for_query_workers' and refreshes==0 and writes==0);done()
 late({{actor=2}});actor_flags[2]=0x100000;avatars[input_offset]=0;run({})
 assert(refreshes==0 and writes==0);done()
-late({{actor=2}});actor_flags[2]=0x100000;u(avatars,flags_offset+12,0x40);run({})
+late({{actor=2}});actor_flags[2]=0x100000;u(avatars,flags_offset+12,0x200);run({})
 assert(refreshes==0 and retries==0);done()
 late({{actor=2}});actor_flags[2]=0x100000;u(avatars,flags_offset,0);run({})
 assert(refreshes==0 and retries==0);done()
@@ -371,7 +372,7 @@ native.exit=function()return 5 end
 run({});assert(retries==0 and writes==0 and control[533]==1);native.exit=exit_validator;done()
 late({{actor=2}});actor_flags[2]=0x100000;control[533]=1;control[532]=1
 run({});assert(refreshes==0 and retries==0 and writes==0);done()
-late({{actor=2}});actor_flags[2]=0x100000;control[533]=1;u(avatars,flags_offset+12,0x40)
+late({{actor=2}});actor_flags[2]=0x100000;control[533]=1;u(avatars,flags_offset+12,0x200)
 run({});assert(refreshes==0 and retries==0 and writes==0);done()
 late({{actor=2}});actor_flags[2]=0x100000;control[533]=1;u(avatars,flags_offset,0)
 run({});assert(refreshes==0 and retries==0 and writes==0);done()
@@ -382,18 +383,113 @@ assert(control[533]==1);native.context_matches=context_matches;native.query_basi
 
 -- Assistance discovery uses fresh queries, preserving the ordinary path and
 -- refusing to change movement merely on manual input or a retained steep hit.
-local candidate_owner={entity=owner+0xf31ad8+24}
+local candidate_owner={entity=owner+0xf32f18+24}
 -- A consumed scheduler slot may be reused while the controller keeps its IDs.
--- This is an expired observation, not a reason to permanently stop the mod.
+-- Private discovery must rebuild from a fresh native approach, including
+-- previously empty hits. Never pass foreign scheduler counts to the driver.
+local function reused()
+    late({{normal=.5}})
+    ffi.fill(queries,1280)
+    p(queries,0,manager+0x53e1b8+0x30)
+    u(queries,0x68,0x393d9518)
+    put(queries,0x74,'uint16_t',64);put(queries,0x76,'uint16_t',64)
+end
+native.context_matches=function()return true,nil,fresh_bytes end
+native.query_basis=basis
+local function rebuilt_query(record,world)
+    local address=assert(api.pointer(record))
+    local slot=(address-controller-0x30)/44
+    local b=ffi.new('uint8_t[128]');ffi.copy(b,record,128)
+    assert(tonumber(ffi.cast('uint32_t *',b+0x68)[0])==0x05a5271a)
+    assert(tonumber(ffi.cast('uint32_t *',b+0x70)[0])==444)
+    assert(tonumber(ffi.cast('uint16_t *',b+0x74)[0])==1)
+    assert(b[0x7a]==2 and b[0x7b]==1 and b[0x7c]==5)
+    assert(record:sub(9,16)==string.rep('\0',8) and record:sub(109,112)==string.rep('\0',4))
+    refresh(record,world)
+    local out=ffi.new('uint8_t[44]')
+    if slot==7 then
+        vector(out,0,0,.7,1);vector(out,12,0,0,.5);u(out,28,555);u(out,32,1)
+    end
+    return ffi.string(out,44),slot==7 and 1 or 0
+end
+native.refresh_query=rebuilt_query
+reused()
+local foreign_before=api.read(scheduler,1280)
+local local_before=api.read(controller,0x2b0)
+local rebuilt_state={}
+local rebuilt_kind,rebuilt_reason=patch.assist_candidate(api,game,exe,rebuilt_state,candidate_owner)
+assert(rebuilt_kind=='slope' and rebuilt_reason=='validated_steep_candidate',
+    'Reused scheduler slots prevented fresh obstacle discovery: '..tostring(rebuilt_reason))
+assert(refreshes==10 and rebuilt_state.query_rebuilds==1 and rebuilt_state.context_reprojections==1)
+assert(rebuilt_state.candidate_trace.passes.slope[8].unit==555)
+assert(writes==0 and retries==0 and api.read(scheduler,1280)==foreign_before
+    and api.read(controller,0x2b0)==local_before,'Private discovery changed shared or controller data');done()
+-- The direct native consumer still uses shared descriptor counts; do not retry
+-- it with reused records, even when discovery can independently find a slope.
+reused();assert(run({})=='retained_query_reused' and writes==0 and refreshes==0 and retries==0);done()
+local private_snapshot=assert(patch.snapshot(api,game,exe,nil,true))
+local retry_ok,retry_reason=patch.retry_consumed(api,private_snapshot,{})
+assert(retry_ok and retry_reason=='retained_query_reused' and writes==0 and refreshes==0 and retries==0);done()
+-- Unrelated scheduler reuse during private casts must not invalidate local
+-- discovery or add foreign records to the local epoch.
+reused();native.refresh_query=function(...)
+    local b,n=rebuilt_query(...);u(queries,0x68,123);return b,n
+end
+assert(patch.assist_candidate(api,game,exe,{},candidate_owner)=='slope' and writes==0);done()
+-- Input and avatar ownership remain mandatory throughout private discovery.
+for _,change in ipairs({function()avatars[input_offset]=0 end,function()u(control,684,999)end}) do
+    reused();native.refresh_query=function(...)local b,n=rebuilt_query(...);change();return b,n end
+    local _,why=patch.assist_candidate(api,game,exe,{},candidate_owner)
+    assert(why=='candidate_changed' and writes==0 and retries==0);done()
+end
+native.refresh_query=rebuilt_query
+for _,context in ipairs({
+    function()return true end,
+    function()return false,'native_approach_blocked' end,
+    function()return false,'unsupported_context',fresh_bytes end,
+}) do
+    reused();native.context_matches=context
+    local _,why=patch.assist_candidate(api,game,exe,{},candidate_owner)
+    assert(why=='fresh_approach_unavailable' and refreshes==0 and writes==0 and retries==0,
+        'Uninitialized private geometry reached obstacle casting');done()
+end
+for _,edit in ipairs({
+    function(b)u(b,684,111)end,function(b)u(b,4,0)end,
+    function(b)f(b,512,0)end,function(b)f(b,516,3)end,function(b)f(b,524,0/0)end,
+}) do
+    reused();local bad=ffi.new('uint8_t[0x2b0]');ffi.copy(bad,fresh_bytes,0x2b0);edit(bad)
+    native.context_matches=function()return true,nil,ffi.string(bad,0x2b0)end
+    local _,why=patch.assist_candidate(api,game,exe,{},candidate_owner)
+    assert(why=='unsupported_fresh_approach' and refreshes==0 and writes==0 and retries==0);done()
+end
+-- Recheck returns matched against the new geometry before any allowance.
+native.context_matches=changed_context
+reused();assert(patch.assist_candidate(api,game,exe,{},candidate_owner)=='slope');done()
+native.context_matches=function(bytes)
+    if bytes==fresh_bytes then return false,'native_approach_blocked' end
+    return changed_context(bytes)
+end
+reused();local _,changed_reason=patch.assist_candidate(api,game,exe,{},candidate_owner)
+assert(changed_reason=='native_context_changed_before_commit' and writes==0 and retries==0);done()
+native.context_matches=function()return true,nil,fresh_bytes end
+reused();native.refresh_query=function(record,world)refresh(record,world);return string.rep('\0',44),0 end
+local _,miss_reason=patch.assist_candidate(api,game,exe,{},candidate_owner)
+assert(miss_reason=='no_usable_assisted_candidate' and refreshes==20 and writes==0 and retries==0);done()
+native.refresh_query=rebuilt_query
+reused();native.exit=function()return 5 end
+local _,blocked_reason=patch.assist_candidate(api,game,exe,{},candidate_owner)
+assert(blocked_reason=='no_usable_assisted_candidate' and writes==0 and retries==0);native.exit=exit_validator;done()
+native.context_matches=context_matches;native.query_basis=nil;native.refresh_query=refresh
+-- Without a fresh approach, skip this observation and recover on a valid batch.
 late({{normal=.5}})
 p(queries,0,manager+0x53e1b8+0x30)
 local resumed_state={}
 local survived,kind,why=pcall(patch.assist_candidate,api,game,exe,resumed_state,candidate_owner)
-assert(survived and kind==nil and why=='retained_query_reused','Expired candidate query stopped discovery')
+assert(survived and kind==nil and why=='fresh_approach_unavailable','Expired candidate query stopped discovery')
 assert(writes==0 and refreshes==0 and retries==0)
 p(queries,0,controller+0x30)
 assert(patch.assist_candidate(api,game,exe,resumed_state,candidate_owner)=='slope','Discovery did not recover')
-assert(resumed_state.candidate_results.retained_query_reused==1 and resumed_state.candidate_results.validated_steep_candidate==1)
+assert(resumed_state.candidate_results.fresh_approach_unavailable==1 and resumed_state.candidate_results.validated_steep_candidate==1)
 done()
 late({{normal=.5}});unreadable=pm+0xe8
 local unavailable_state={}
@@ -403,6 +499,75 @@ assert(writes==0 and refreshes==0)
 unreadable=nil
 assert(patch.assist_candidate(api,game,exe,unavailable_state,candidate_owner)=='slope')
 done()
+
+-- v8.5 live failure: reused slots plus a blocked ordinary-height approach
+-- prevented any higher-top cast. The native raised search must be independent
+-- of that low approach, but may only authorize a private ledge candidate.
+local higher=ffi.new('uint8_t[0x2b0]');ffi.copy(higher,fresh_bytes,0x2b0)
+vector(higher,488,0,.4,2.4);vector(higher,500,0,1,2.4);f(higher,512,2)
+local higher_bytes=ffi.string(higher,0x2b0)
+local higher_calls,top_height,top_normal,no_hit=0,2.2,.9,false
+local function higher_search(bytes,unit,name,direction,reach)
+    assert(unit==444 and name==123 and direction[2]==1 and math.abs(reach-.6)<.00001)
+    higher_calls=higher_calls+1
+    return higher_bytes
+end
+local function higher_query(record,world)
+    rebuilt_query(record,world) -- Also proves native template ownership/filter.
+    local out=ffi.new('uint8_t[44]')
+    vector(out,0,0,.7,top_height);vector(out,12,0,0,top_normal);u(out,28,555);u(out,32,1)
+    return ffi.string(out,44),no_hit and 0 or 1
+end
+native.query_basis=basis;native.raised_approach=higher_search;native.refresh_query=higher_query
+native.context_matches=function()return false,'native_approach_blocked',nil,4 end
+reused();local independent_state={}
+local foreign=api.read(scheduler,1280);local unchanged=api.read(controller,0x2b0)
+local independent_kind,independent_reason=patch.assist_candidate(api,game,exe,independent_state,candidate_owner)
+assert(independent_kind=='ledge' and independent_reason=='validated_raised_top',
+    'Blocked low approach still prevented independent higher discovery: '..tostring(independent_reason))
+assert(higher_calls==2 and refreshes==10 and independent_state.raised_approach_rebuilds==1)
+assert(independent_state.last_approach_code==4 and independent_state.raised_trace.context=='fresh_raised_approach')
+assert(writes==0 and retries==0 and api.read(scheduler,1280)==foreign and api.read(controller,0x2b0)==unchanged);done()
+for _,setup in ipairs({
+    function()top_height=2.51 end,
+    function()top_normal=.5 end,
+    function()no_hit=true end,
+    function()actor_speed[1]=2 end,
+    function()native.exit=function()return 5 end end,
+}) do
+    reused();top_height=2.2;top_normal=.9;no_hit=false;native.exit=exit_validator;setup()
+    local kind,why=patch.assist_candidate(api,game,exe,{},candidate_owner)
+    assert(kind==nil and why=='no_usable_assisted_candidate' and writes==0 and retries==0);done()
+end
+top_height=2.5;top_normal=.9;no_hit=false;native.exit=exit_validator
+reused();assert(patch.assist_candidate(api,game,exe,{},candidate_owner)=='ledge');done()
+for _,change in ipairs({function()avatars[input_offset]=0 end,function()u(control,684,999)end}) do
+    reused();native.refresh_query=function(...)local b,n=higher_query(...);change();return b,n end
+    local kind,why=patch.assist_candidate(api,game,exe,{},candidate_owner)
+    assert(kind==nil and why=='candidate_changed' and writes==0 and retries==0);done()
+end
+native.refresh_query=higher_query
+reused();higher_calls=0
+native.raised_approach=function(...)
+    local b=higher_search(...)
+    if higher_calls==2 then
+        local moved=ffi.new('uint8_t[0x2b0]');ffi.copy(moved,b,#b);f(moved,488,.05)
+        return ffi.string(moved,0x2b0)
+    end
+    return b
+end
+local _,why_moved=patch.assist_candidate(api,game,exe,{},candidate_owner)
+assert(why_moved=='raised_context_changed_before_commit' and writes==0);done()
+reused();native.raised_approach=function()return nil,'raised_approach_no_ledge'end
+local _,why_missing=patch.assist_candidate(api,game,exe,{},candidate_owner)
+assert(why_missing=='raised_approach_no_ledge' and refreshes==0 and writes==0);done()
+native.raised_approach=higher_search
+reused();higher_calls=0;move[15]=1
+assert(patch.assist_candidate(api,game,exe,{},candidate_owner)==nil and higher_calls==0);done()
+reused();higher_calls=0
+assert(run({})=='retained_query_reused' and higher_calls==0 and writes==0 and retries==0);done()
+native.raised_approach=nil;native.query_basis=nil;native.context_matches=context_matches;native.refresh_query=refresh
+
 local function candidate(expected)
     local before=api.read(controller,0x2b0)
     local candidate_state={}

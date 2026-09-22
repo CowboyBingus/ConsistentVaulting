@@ -11,7 +11,7 @@ from module import build_module
 from package import package_release
 
 MODULE='mods/cowboybingus/consistent_vaulting'
-REVISION='data-v8.2'
+REVISION='data-v8.6'
 FORBIDDEN=('VirtualAlloc','VirtualProtect','FlushInstructionCache','CreateRemoteThread',
            'RtlAddFunctionTable','RtlDeleteFunctionTable','LoadLibrary')
 def run(args,**kwargs):
@@ -30,6 +30,7 @@ def main():
     env=dict(os.environ,LUA_PATH=str(LUA.parent/'?.lua')+';;')
     tests=run([LUA,ROOT/'tests/test_vault.lua',ROOT/'src'],env=env)
     tests+=run([LUA,ROOT/'tests/test_geometry.lua',ROOT/'src'],env=env)
+    tests+=run([LUA,ROOT/'tests/test_raised_approach.lua',ROOT/'src'],env=env)
     tests+=run([LUA,ROOT/'tests/test_slope.lua',ROOT/'src'],env=env)
     tests+=run([LUA,ROOT/'tests/test_loader.lua',ROOT/'src'],env=env)
     (build/ARCHIVE).write_bytes(make_archive(resources))
@@ -41,7 +42,7 @@ def main():
         'game_exe_sha256':EXE_SHA,'game_dll_sha256':GAME_DLL_SHA,'deployment_files':files,
         'files':{p:sha((ROOT/p).read_bytes()) for p in files.values()},
         'requires':[{'name':'Bingus Shared Loader','api':1,'revision':'loader-v4'}],
-        'module':MODULE,'runtime_verified':False,'status':'offline_verified_step_report_recovery_and_fresh_geometry_gameplay_pending',
+        'module':MODULE,'runtime_verified':False,'status':'offline_verified_independent_raised_approach_gameplay_pending',
         'executable_memory_changed':False,'custom_dlls':0,'boot_replaced':False,
         'write':{'target':'local avatar query data, per-avatar slope settings, movement speed cap and character-controller slope cosine','max_records':10,
                  'max_bytes':136,'fields':['selected fresh hit (44 bytes)','other query unit/actor pairs (8 bytes each)','temporary query phase (4 bytes)',
@@ -57,10 +58,11 @@ def main():
         'retry_policy':{'step_report':'Controller +533 is historical automatic-step output, not an eligibility veto; preserved without direct writes',
             'geometry':'Rebuild private descriptors from successful fresh native approach when retained geometry differs by more than 0.02 units',
             'consumption':'Only originally nonempty slots recast; fresh collision/actor/normal/height/exit checks, approach recheck and original ownership guards',
+            'reused_query_discovery':'Rebuild all ten private shapes from fresh native geometry; a blocked ordinary approach can use the native five-slice search with private 2.5-height parameters for ledge discovery only; never consume foreign shared query counts or inject discovery hits',
             'scheduler_writes':False,'controller_geometry_writes':False},
         'ledge_policy':{'extra_ground_height':0.55,'private_query_start_z':'native mover Z + 2.5 + vertical shape half-extent + horizontal footprint bound * tan(original slope limit) + 0.01 separation',
             'min_candidate_height':0.5,'max_ground_height':2.5,'air_height_unchanged':True,
-            'discovery_context':'May continue private bounded casts after low-height approach context rejection; final native approach and retry context remain mandatory',
+            'discovery_context':'Fresh native higher-height geometry can replace missing or stale low-height geometry; repeats before grant; real native approach/headroom still runs after the allowance',
             'surface_angle':'original threshold','speed_unchanged':True,'clearance':'native exit checks before grant; original approach/headroom pipeline reruns with temporary height'},
         'offline_tests':tests.strip(),
         'source_sha256':{p.relative_to(ROOT).as_posix():sha(p.read_bytes())

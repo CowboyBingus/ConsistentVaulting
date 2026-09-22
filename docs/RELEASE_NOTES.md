@@ -1,0 +1,3 @@
+- Update compatibility for game build 25327279.
+- Fix higher-ledge detection and fresh climb attempts.
+- Preserve obstacle clearance, slope and movement checks.

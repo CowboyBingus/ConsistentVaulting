@@ -14,7 +14,7 @@ local function p(b,o,v)put(b,o,'uint64_t',v) end
 local function f(b,o,v)put(b,o,'float',v) end
 local function number(a)return tonumber(ffi.cast('float *',locate(a,4))[0]) end
 local g,e,pm,mode,owner,am,mm=0x10000000,0x20000000,0x30000000,0x31000000,0x40000000,0x50000000,0x60000000
-for rva,address in pairs({[0x276c3d0]=mode,[0x276c190]=pm,[0x276f0c0]=owner,[0x276ca30]=am,[0x276c280]=mm}) do p(region(g+rva,8),0,address) end
+for rva,address in pairs({[0x33266a0]=mode,[0x3326468]=pm,[0x346bf98]=owner,[0x3326d20]=am,[0x3326558]=mm}) do p(region(g+rva,8),0,address) end
 local players,mission,avatars,movement=region(pm,0x440),region(mode,0x44),region(am,0x550000),region(mm,0x48e0)
 local player=region(0x70000000,24);player[20]=1;p(players,0xe8,0x70000000)
 u(players,0x84,2);u(players,0x88,2);u(players,0x3a8,9);u(mission,8,1);u(mission,0x40,1)
@@ -24,13 +24,13 @@ local function map(b,o,address,key,index)
     for i=0,15 do u(rows,i*8,0xffffffff) end
     u(rows,key%16*8,key);u(rows,key%16*8+4,index);return rows
 end
-local unitmap=region(owner+0xf21a88,20)
+local unitmap=region(owner+0xf22ec8,20)
 map(unitmap,0,0x70100000,9,1)
-local entities=region(owner+0xf31ad8,48)
+local entities=region(owner+0xf32f18,48)
 for i=0,1 do
     ffi.copy(entities+i*24,'\151\250\077\041\077\051\028\077',8)
     u(entities,i*24+8,i==0 and 111 or 222);u(entities,i*24+12,i==0 and 333 or 444);entities[i*24+20]=1
-    p(avatars,0x110+i*8,owner+0xf31ad8+i*24)
+    p(avatars,0x110+i*8,owner+0xf32f18+i*24)
 end
 local avatarrows=map(avatars,0xf8,0x70200000,222,1)
 u(avatarrows,111%16*8,111);u(avatarrows,111%16*8+4,0);u(avatars,0x6c,2)
@@ -38,15 +38,15 @@ local overrides=map(avatars,0x547c70,0x70300000,222,1)
 map(movement,0x48a0,0x70400000,222,0)
 local move,mover=region(0x70500000,132),region(0x70600000,164)
 p(movement,0x48c8,0x70500000);p(movement,0x48d0,0x70600000);u(mover,76,123);u(mover,88,0x80000001)
-local pool=region(0x70700000,56);p(region(e+0x27c7178+2*0x810,8),0,0x70700000)
+local pool=region(0x70700000,56);p(region(e+0x27c3298+2*0x810,8),0,0x70700000)
 local records=region(0x70800000,128);p(pool,0,0x70800000);u(pool,28,0x00000040)
 u(pool,36,2);u(pool,40,0xffff);u(pool,52,0x80000000)
 u(records,64,0x80000001);u(records,72,444);p(records,80,0x70900000);p(records,88,0x70a00000)
 local definition,object=region(0x70900000,28),region(0x70a00000,104)
 u(definition,0,123);f(definition,8,1.9);f(definition,12,.5);f(definition,16,.5)
 f(definition,20,50*math.pi/180);f(definition,24,70*math.pi/180)
-p(object,0,e+0x16a5018);f(object,88,1);f(object,100,math.cos(70*math.pi/180))
-local component=region(0x70b00000,884);p(region(owner+0xf11778,8),0,0x70b00000)
+p(object,0,e+0x16a16c8);f(object,88,1);f(object,100,math.cos(70*math.pi/180))
+local component=region(0x70b00000,884);p(region(owner+0xf12bb8,8),0,0x70b00000)
 ffi.copy(component,entities+24,8);u(component,8,0)
 local settings=avatars+0x547d24+852
 local input=0x150+0xa7aec+0x1b68+14*32
@@ -76,7 +76,7 @@ function api.write(a,b)
     ffi.copy(locate(a,4),b,4);return true
 end
 function native.ensure_override(manager,entity)
-    assert(manager==am and entity==owner+0xf31ad8+24)
+    assert(manager==am and entity==owner+0xf32f18+24)
     override_calls=override_calls+1
     -- Model the original zero-count modifier: unchanged copy and local mapping.
     ffi.copy(settings,component+32,852)
@@ -90,7 +90,7 @@ local function reset()
     ffi.fill(avatars+flags,24);u(avatars,flags,2);move[12]=0;move[15]=0;f(move,20,0);f(move,24,0);f(move,28,1)
     f(avatars,direction+8,-1);f(settings,12,2);f(settings,152,45);f(settings,172,40);f(settings,260,1.95)
     f(component+32,12,2);f(component+32,152,45);f(component+32,172,40);f(component+32,260,1.95)
-    f(object,96,math.cos(50*math.pi/180));p(object,0,e+0x16a5018)
+    f(object,96,math.cos(50*math.pi/180));p(object,0,e+0x16a16c8)
     u(overrides,222%16*8,222);u(overrides,222%16*8+4,1);u(avatars,0x547d20,2)
     u(records,64,0x80000001);u(records,72,444);u(entities,32,222)
 end
@@ -128,22 +128,22 @@ assert(A.stop(api,g,e,state));baseline();done()
 reset();state={};arm(state);now=1.26;step(state);assert(not state.slope_lease);baseline()
 now=2;step(state);assert(state.slope_arms==1,'Held input rearmed expired lease')
 avatars[input]=0;step(state);avatars[input]=1;step(state);assert(state.slope_arms==2);assert(A.stop(api,g,e,state));done()
-reset();state={};arm(state);u(avatars,flags+12,0x40);now=.5;step(state);assert(state.slope_climbs==1 and number(cells.cap)==2)
+reset();state={};arm(state);u(avatars,flags+12,0x200);now=.5;step(state);assert(state.slope_climbs==1 and number(cells.cap)==2)
 u(avatars,flags+12,0);f(move,20,math.sin(62*math.pi/180));f(move,28,math.cos(62*math.pi/180));now=1;position={0,1,1};step(state)
 assert(state.slope_status=='support' and state.slope_landings==1)
 now=300;step(state);assert(state.slope_lease,'Stable perch dropped on timer')
 f(move,20,0);f(move,28,1);step(state);now=300.36;step(state);assert(not state.slope_lease);baseline();done()
-reset();state={};arm(state);u(avatars,flags+12,0x40);now=.5;step(state)
+reset();state={};arm(state);u(avatars,flags+12,0x200);now=.5;step(state)
 u(avatars,flags+12,0);f(move,20,math.sin(66*math.pi/180));f(move,28,math.cos(66*math.pi/180));now=1;step(state)
 now=1.26;step(state);assert(not state.slope_lease);baseline();done()
 reset();state={};arm(state);position={3.01,0,0};step(state);assert(state.slope_last_release=='left_area');baseline();done()
 reset();state={};arm(state);position={0,0,3.01};step(state);assert(not state.slope_lease);baseline();done()
-reset();state={};arm(state);u(avatars,flags+12,0x40);now=9;step(state);assert(not state.slope_lease);baseline();done()
-reset();state={};arm(state);u(avatars,flags,0x1002);step(state);assert(not state.slope_lease);baseline();done()
+reset();state={};arm(state);u(avatars,flags+12,0x200);now=9;step(state);assert(not state.slope_lease);baseline();done()
+reset();state={};arm(state);u(avatars,flags,0x4002);step(state);assert(not state.slope_lease);baseline();done()
 reset();state={};arm(state);u(mission,0x40,0);step(state);assert(not state.slope_lease);baseline();done()
 reset();state={};arm(state);u(players,0x3a8,0x7fff);step(state);assert(not state.slope_lease);baseline();done()
 reset();state={};f(avatars,direction+8,.75);arm(state);assert(number(cells.cap)==.75);assert(A.stop(api,g,e,state));assert(number(cells.cap)==.75);done()
-reset();state={};arm(state);u(avatars,flags+12,0x40);step(state);f(avatars,direction+8,.25);step(state)
+reset();state={};arm(state);u(avatars,flags+12,0x200);step(state);f(avatars,direction+8,.25);step(state)
 assert(not state.slope_lease and number(cells.cap)==.25 and number(cells.enter)==45);done()
 reset();state={};f(settings,152,55);step(state);avatars[input]=1;step(state);assert(not state.slope_lease and writes==0);done()
 reset();state={};u(overrides,222%16*8,0xffffffff);u(avatars,0x547d20,0);arm(state)
@@ -165,7 +165,7 @@ reset();state={};arm(state);unreadable=cells.slope;assert(not A.stop(api,g,e,sta
 unreadable=nil;assert(A.stop(api,g,e,state));baseline();done()
 reset();state={};step(state);avatars[input]=1;release_on_write=3;step(state)
 assert(not state.slope_lease);baseline();done()
-reset();state={};arm(state);u(avatars,flags+12,0x40);step(state)
+reset();state={};arm(state);u(avatars,flags+12,0x200);step(state)
 u(avatars,flags+12,0);move[12]=1;step(state);now=.26;step(state)
 assert(not state.slope_lease,'Stale ground normal extended unsupported lease');baseline();done()
 reset();state={};arm(state);u(entities,32,999);local before=writes
@@ -186,7 +186,7 @@ reset();state={};A.candidate=nil;step(state);avatars[input]=1;step(state)
 assert(writes==0 and not state.slope_lease);done()
 -- Cap writes are independently reversible after an actual native climb starts.
 for _,mode in ipairs({'fail','partial'}) do
-    reset();state={};arm(state);u(avatars,flags+12,0x40)
+    reset();state={};arm(state);u(avatars,flags+12,0x200)
     if mode=='fail' then fail=writes+1 else partial=writes+1 end
     local ok=A.step(api,g,e,state);assert(not ok and not state.slope_lease);baseline();done()
 end
@@ -194,7 +194,7 @@ end
 -- or slope support. It ends as soon as its observed native climb finishes.
 reset();state={};candidate_kind='ledge';arm(state)
 assert(number(cells.height)==2.5 and number(cells.enter)==45 and number(cells.cap)==-1 and writes==1)
-u(avatars,flags+12,0x40);step(state);step(state);assert(number(cells.cap)==-1 and state.ledge_climbs==1)
+u(avatars,flags+12,0x200);step(state);step(state);assert(number(cells.cap)==-1 and state.ledge_climbs==1)
 u(avatars,flags+12,0);step(state);assert(not state.slope_lease and state.ledge_arms==1);baseline();done()
 reset();state={};candidate_kind='ledge';arm(state);now=1.3;step(state)
 assert(state.ledge_attempt_expiries==1 and not state.ledge_climbs and not state.slope_lease)

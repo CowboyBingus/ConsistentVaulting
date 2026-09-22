@@ -34,7 +34,7 @@ function M.same_epoch(api,s)
     return true
 end
 
-function M.snapshot(api,game,exe,state)
+function M.snapshot(api,game,exe,state,discovery)
     local s = {epoch={},guards={},hits={}}
     local function read(address,size,epoch)
         local bytes = assert(api.read(address,size),'Game data unavailable')
@@ -62,9 +62,9 @@ function M.snapshot(api,game,exe,state)
         end
         return nil
     end
-    local mode=read(global(0x276c3d0),0x44)
+    local mode=read(global(0x33266a0),0x44)
     if u32(mode,8)==0 or u32(mode,0x40)<1 or u32(mode,0x40)>7 then return nil,'waiting_for_mission' end
-    local pm=global(0x276c190,true)
+    local pm=global(0x3326468,true)
     local counts=read(pm+0x84,8)
     assert(u32(counts,0)<=4 and u32(counts,4)<=4,'Unsupported player count')
     if u32(counts,0)==0 or u32(counts,4)==0 then return nil,'waiting_for_local_player' end
@@ -72,17 +72,17 @@ function M.snapshot(api,game,exe,state)
     if bit.band(player:byte(21),1)==0 then return nil,'waiting_for_local_player' end
     local unit_ref=u32(read(pm+0x3a8,4,true),0)
     if unit_ref==0x7fff then return nil,'waiting_for_local_avatar' end
-    local owner=global(0x276f0c0,true)
-    local ei=lookup(read(owner+0xf21a88,20),unit_ref,1048576)
+    local owner=global(0x346bf98,true)
+    local ei=lookup(read(owner+0xf22ec8,20),unit_ref,1048576)
     if not ei or ei==INVALID then return nil,'waiting_for_local_avatar' end
     assert(ei<262144,'Unsupported entity index')
-    local entity_address=owner+0xf31ad8+ei*24
+    local entity_address=owner+0xf32f18+ei*24
     local entity=read(entity_address,24,true)
     -- Resource 0x4d1c334d294dfa97, kept as bytes to avoid floating-point hashing.
     assert(entity:sub(1,8)=='\151\250\077\041\077\051\028\077','Unsupported avatar resource')
     if bit.band(entity:byte(21),1)==0 then return nil,'waiting_for_local_avatar' end
     local id=u32(entity,8)
-    local manager=global(0x276ca30,true)
+    local manager=global(0x3326d20,true)
     local ai=lookup(read(manager+0xf8,20),id,64)
     if not ai or ai==INVALID then return nil,'waiting_for_local_avatar' end
     local n=u32(read(manager+0x6c,4),0)
@@ -111,12 +111,12 @@ function M.snapshot(api,game,exe,state)
     local flags=read(s.flags_address,24)
     if s.stage==3 then
         -- Match A88020/A88160 before re-entering the original local driver.
-        local climbing=bit.band(u32(flags,12),0x40)~=0
-        local excluded=bit.band(u32(flags,0),0x101000)~=0
-            or bit.band(u32(flags,4),0x1000000)~=0
-            or bit.band(u32(flags,8),0x84010800)~=0
-            or bit.band(u32(flags,12),0x2000a303)~=0
-            or bit.band(u32(flags,16),1)~=0
+        local climbing=bit.band(u32(flags,12),0x200)~=0
+        local excluded=bit.band(u32(flags,0),0x404000)~=0
+            or bit.band(u32(flags,4),0x8000000)~=0
+            or bit.band(u32(flags,8),0x20084000)~=0
+            or bit.band(u32(flags,12),0x5181c)~=0
+            or bit.band(u32(flags,16),9)~=0
         -- +532 is pending climb readiness. +533 only reports an automatic
         -- step; A8A710 can retain it across later failed detections. A88160
         -- does not use that report as an eligibility veto. Never clear it.
@@ -131,14 +131,14 @@ function M.snapshot(api,game,exe,state)
     local total=u32(jobs,0)
     if s.stage==3 then
         -- Lua runs after consumption. Require an idle scheduler before using
-        -- its retained descriptors as templates for private synchronous casts.
+        -- retained descriptors or rebuilding private discovery queries.
         if total~=0 then return nil,'waiting_for_idle_query_scheduler' end
         for job=0,7 do
             if u32(jobs,12+job*12)~=1 then return nil,'waiting_for_query_workers' end
         end
-        s.world=global(0x276f0c8,true)
+        s.world=global(0x346bfa0,true)
     else assert(total>0 and total<=2048,'Unsupported query count') end
-    local seen={}
+    local seen,records={},{}
     for slot=0,9 do
         local query=u32(epoch,4+slot*4)
         assert(query>0 and query<=(s.stage==3 and 2048 or total) and not seen[query],'Unsupported query ID')
@@ -149,22 +149,46 @@ function M.snapshot(api,game,exe,state)
             if query-1>=start and query-1<finish and done==1 then completed=true end
         end
         if s.stage==2 and not completed then return nil,'waiting_for_query_workers' end
-        local record=read(scheduler+(query-1)*128,128,true)
+        local address=scheduler+(query-1)*128
+        -- Ownership must be established for the whole batch before any shared
+        -- descriptor becomes a guard. Reused records are never our epoch.
+        local record=assert(api.read(address,128),'Game data unavailable')
+        assert(#record==128,'Short game read')
         local hit_address=s.controller+0x30+44*slot
-        if api.distance(pointer(record),hit_address)~=0 then
-            if s.stage==3 then return nil,'retained_query_reused' end
-            error('Query output is not local controller data')
+        local output=api.pointer(record)
+        if not output or api.distance(output,hit_address)~=0 then
+            if s.stage~=3 then error('Query output is not local controller data') end
+            if discovery~=true then return nil,'retained_query_reused' end
+            s.rebuild_queries=true
         end
-        assert(u32(record,0x68)==0x05a5271a and u32(record,0x70)==u32(entity,12), 'Query identity mismatch')
-        assert(record:byte(0x7b)==2 and record:byte(0x7c)==1 and record:byte(0x7d)==5,'Unsupported query type')
-        assert(u16(record,0x74)==1 and u16(record,0x76)<=1,'Unsupported query capacity')
-        if s.stage==3 then
-            assert(record:sub(9,16)==string.rep('\0',8) and u32(record,0x6c)==0,
-                'Unsupported retained query options')
+        records[#records+1]={address=address,bytes=record,hit_address=hit_address}
+    end
+    for i,row in ipairs(records) do
+        local record,count=row.bytes
+        if s.rebuild_queries then
+            -- A9BE10 / 175BA70's fixed query metadata. Geometry is populated
+            -- only after a successful fresh native approach in M.refresh.
+            local template=ffi.new('uint8_t[128]')
+            ffi.cast('uintptr_t *',template)[0]=ffi.cast('uintptr_t',row.hit_address)
+            ffi.cast('uint32_t *',template+0x68)[0]=0x05a5271a
+            ffi.cast('uint32_t *',template+0x70)[0]=u32(entity,12)
+            ffi.cast('uint16_t *',template+0x74)[0]=1
+            template[0x7a],template[0x7b],template[0x7c]=2,1,5
+            record,count=ffi.string(template,128),0
+        else
+            assert(read(row.address,128,true)==record,'Query changed during snapshot')
+            assert(u32(record,0x68)==0x05a5271a and u32(record,0x70)==u32(entity,12), 'Query identity mismatch')
+            assert(record:byte(0x7b)==2 and record:byte(0x7c)==1 and record:byte(0x7d)==5,'Unsupported query type')
+            assert(u16(record,0x74)==1 and u16(record,0x76)<=1,'Unsupported query capacity')
+            if s.stage==3 then
+                assert(record:sub(9,16)==string.rep('\0',8) and u32(record,0x6c)==0,
+                    'Unsupported retained query options')
+            end
+            count=u16(record,0x76)
         end
-        local hit=read(hit_address,44)
-        s.hits[#s.hits+1]={slot=slot,address=hit_address,bytes=hit,
-            count=u16(record,0x76),position=vector(hit,0),normal_z=number(hit,20),
+        local hit=read(row.hit_address,44)
+        s.hits[#s.hits+1]={slot=i-1,address=row.hit_address,bytes=hit,
+            count=count,position=s.rebuild_queries and {0,0,0} or vector(hit,0),normal_z=number(hit,20),
             unit=u32(hit,28),actor=u32(hit,32),record=record}
     end
     local override=lookup(read(manager+0x547c70,20),id,64)
@@ -173,7 +197,7 @@ function M.snapshot(api,game,exe,state)
         assert(override<8,'Unsupported settings override')
         settings=read(manager+0x547d24+override*0x354,852)
     else
-        local component=pointer(read(owner+0xf11778,8))
+        local component=pointer(read(owner+0xf12bb8,8))
         -- This resource's two-slot map is verified at runtime, not assumed index zero.
         local map=read(component,32)
         local index
@@ -186,24 +210,25 @@ function M.snapshot(api,game,exe,state)
     local angle=number(settings,0x98)
     assert(angle>0 and angle<90,'Unsupported surface angle')
     s.normal_threshold=f32(math.cos(f32(angle*f32(math.pi/180))))
-    local movement=global(0x276c280)
+    local movement=global(0x3326558)
     local mi=lookup(read(movement+0x48a0,20),id,1048576)
     assert(mi and mi~=INVALID and mi<8192,'Movement record unavailable')
     local move=read(pointer(read(movement+0x48c8,8))+mi*132,132)
     local mover=read(pointer(read(movement+0x48d0,8))+mi*164,164)
-    local ground=bit.band(u32(flags,4),0x80000000)==0
-        and bit.band(u32(flags,8),0xc0000000)==0 and bit.band(u32(flags,12),4)==0 and move:byte(16)==0
+    local ground=bit.band(u32(flags,8),4)==0 and bit.band(u32(flags,12),0x26)==0 and move:byte(16)==0
     s.max_height=number(settings,ground and 0x104 or 0x108)
     s.ground=ground
     assert(s.max_height>0 and s.max_height<=3,'Unsupported vault height')
     s.native=assert(api.native(game,exe),'Native validation unavailable')
-    s.root=s.native.mover_position(u32(entity,12),u32(mover,76))
+    s.unit=u32(entity,12);s.mover_name=u32(mover,76)
+    s.ground_reach=number(settings,0x10c)
+    s.root=s.native.mover_position(s.unit,s.mover_name)
     assert(s.root and finite(s.root[1]) and finite(s.root[2]) and finite(s.root[3]),'Mover position unavailable')
-    local camera=vector(read(global(0x2770688)+0x1c,12),0)
+    local camera=vector(read(global(0x346d560)+0x1c,12),0)
     camera[3]=0
     local direction=normalize(camera)
-    if bit.band(u32(flags,8),0x1000)~=0 then
-        -- A59C00 uses this entity's bit 76 to choose its motion direction.
+    if bit.band(u32(flags,8),0x8000)~=0 then
+        -- A6B790 uses this entity's bit 79 to choose its motion direction.
         assert(u32(read(manager+ai*0x1238+0x53e15c,4),0)==id,'Direction state identity mismatch')
         direction=normalize(vector(read(manager+0x150+ai*0xa7aec+171698*4,12),0))
     end
@@ -348,8 +373,21 @@ function M.reproject(s,fresh)
 end
 
 function M.refresh(s,state)
-    local matched,why,fresh=s.native.context_matches(s.controller_bytes)
-    if not matched and why=='native_approach_geometry_changed' and fresh then
+    local matched,why,fresh,code=s.native.context_matches(s.controller_bytes)
+    state.last_approach_reason=why or (matched and 'matched' or 'unknown')
+    state.last_approach_code=code
+    if s.rebuild_queries then
+        -- No shared descriptor survives, so neither an old hit count nor old
+        -- geometry may authorize a cast, including the raised-top fallback.
+        if not fresh or (not matched and why~='native_approach_geometry_changed') then
+            return nil,'fresh_approach_unavailable',why
+        end
+        matched,why=M.reproject(s,fresh)
+        if matched then
+            state.query_rebuilds=(state.query_rebuilds or 0)+1
+            state.context_reprojections=(state.context_reprojections or 0)+1
+        end
+    elseif not matched and why=='native_approach_geometry_changed' and fresh then
         matched,why=M.reproject(s,fresh)
         if matched then state.context_reprojections=(state.context_reprojections or 0)+1 end
     end
@@ -359,7 +397,7 @@ function M.refresh(s,state)
     local originals={}
     for i,hit in ipairs(s.hits) do
         originals[i]=hit.bytes
-        if hit.count==1 then
+        if s.rebuild_queries or hit.count==1 then
             -- Retained geometry must remain near and in front of this avatar.
             -- A fresh cast prevents old hits from surviving removed obstacles.
             for _,offset in ipairs({64,92}) do
@@ -387,17 +425,30 @@ end
 local function assist_candidate(api,game,exe,state,owner)
     -- Match the main query path's handling of transient unavailable snapshots.
     -- Native validation errors after a snapshot still reach loader cleanup.
-    local ok,s,why=pcall(M.snapshot,api,game,exe)
+    local ok,s,why=pcall(M.snapshot,api,game,exe,nil,true)
     if not ok then state.candidate_error=tostring(s);return nil,'candidate_snapshot_unavailable' end
     if not s or s.stage~=3 then return nil,why or 'waiting_for_consumed_query' end
     if api.distance(s.entity,owner.entity)~=0 then return nil,'candidate_identity_changed' end
-    local originals,reason=M.refresh(s,state)
+    local originals,reason,approach_reason=M.refresh(s,state)
+    local raised_fresh
+    if not originals and s.ground and math.abs(s.max_height-1.95)<0.001
+        and s.native.raised_approach and (reason=='native_approach_blocked'
+            or reason=='native_approach_geometry_changed' or reason=='retained_query_out_of_reach'
+            or reason=='fresh_approach_unavailable' and approach_reason=='native_approach_blocked') then
+        local fresh,why=s.native.raised_approach(s.controller_bytes,s.unit,s.mover_name,s.direction,s.ground_reach)
+        if not fresh then return nil,why or 'raised_approach_unavailable' end
+        local ready;ready,why=M.reproject(s,fresh)
+        if not ready then return nil,why end
+        raised_fresh=fresh
+        state.raised_approach_rebuilds=(state.raised_approach_rebuilds or 0)+1
+        reason='fresh_raised_approach'
+    end
     -- A higher-top discovery cast does not consume retained hits. Requiring
     -- the original low-height approach to succeed first makes that discovery
     -- circular. Only this private, bounded search may continue on a context
     -- rejection; ordinary/slope retries require matched or freshly rebuilt geometry.
     if not originals and reason~='native_approach_blocked' and reason~='native_approach_geometry_changed'
-        and reason~='native_approach_changed_or_blocked' then return nil,reason end
+        and reason~='native_approach_changed_or_blocked' and not raised_fresh then return nil,reason end
     local trace={time=api.time(),root=s.root,direction=s.direction,ground=s.ground,
         context=originals and (s.reprojected and 'reprojected' or 'matched') or reason,
         passes={ordinary={},slope={},raised={}}}
@@ -460,7 +511,17 @@ local function assist_candidate(api,game,exe,state,owner)
     local hit=s.hits[selected.slot+1]
     local dx,dy=hit.position[1]-s.root[1],hit.position[2]-s.root[2]
     if dx*dx+dy*dy>2.25 or dx*s.direction[1]+dy*s.direction[2]<-0.15 then return nil,'candidate_out_of_reach' end
-    if s.reprojected and not s.native.context_matches(s.controller_bytes) then
+    if raised_fresh then
+        local fresh=s.native.raised_approach(s.controller_bytes,s.unit,s.mover_name,s.direction,s.ground_reach)
+        if type(fresh)~='string' or #fresh~=0x2b0 or u32(fresh,4)~=1
+            or u32(fresh,684)~=u32(raised_fresh,684) then return nil,'raised_context_changed_before_commit' end
+        for offset=488,528,4 do
+            local v=number(fresh,offset)
+            if not finite(v) or math.abs(v-number(raised_fresh,offset))>0.02 then
+                return nil,'raised_context_changed_before_commit'
+            end
+        end
+    elseif s.reprojected and not s.native.context_matches(s.controller_bytes) then
         return nil,'native_context_changed_before_commit'
     end
     for _,guard in ipairs(s.guards) do
@@ -481,6 +542,9 @@ function M.assist_candidate(api,game,exe,state,owner)
 end
 
 function M.retry_consumed(api,s,state)
+    -- The native selectors read shared scheduler counts. Private rebuilding
+    -- is discovery-only; never let foreign counts reach local consumption.
+    if s.rebuild_queries then return true,'retained_query_reused',false end
     local now=api.time()
     if state.last_retry_at and now-state.last_retry_at<0.1 then
         return true,'waiting_for_retry_interval',false
@@ -555,7 +619,7 @@ function M.retry_consumed(api,s,state)
     local started=false
     if M.same_epoch(api,s) then
         local flags=api.read(s.flags_address,24)
-        started=flags and bit.band(u32(flags,12),0x40)~=0 or false
+        started=flags and bit.band(u32(flags,12),0x200)~=0 or false
     end
     local restored=M.restore(api,pending);state.pending=nil
     if not restored then return false,'query_restore_failed',false end

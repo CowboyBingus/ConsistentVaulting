@@ -1,3 +1,4 @@
+
 ![Consistent Vaulting](assets/banner.png)
 
 # Consistent Vaulting
@@ -11,4 +12,6 @@ Makes manual vaulting more forgiving than vanilla by checking obstacles again wh
 
 Changes apply only to your Helldiver. Collision, clearance, reach and moving-obstacle checks still govern whether a climb can happen.
 
-Release **v8.2** includes input/performance fixes. Offline checks cover this revision; in-game frame-time validation is pending. Routine diagnostics are off by default; developers can set `CowboyBingusDiagnostics = true` before initialization to enable them.
+See [validation coverage](docs/MIGRATION_VALIDATION.md) for the scope of the release checks. Routine diagnostics are off by default; developers can set `CowboyBingusDiagnostics = true` before initialization to enable them.
+
+Current version: **v8.6**, for game build **25327279**. See [changes](CHANGELOG.md) and [validation coverage](docs/MIGRATION_VALIDATION.md).

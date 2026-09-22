@@ -37,9 +37,9 @@ function A.snapshot(api,game,exe,key)
     end
     local ref
     if key then ref=key.ref else
-        local mode=read(global(0x276c3d0),0x44,true)
+        local mode=read(global(0x33266a0),0x44,true)
         if u(mode,8)==0 or u(mode,0x40)<1 or u(mode,0x40)>7 then return nil,'outside_mission' end
-        local pm=global(0x276c190)
+        local pm=global(0x3326468)
         local counts=read(pm+0x84,8)
         assert(u(counts)<=4 and u(counts,4)<=4,'Unsupported player count')
         if u(counts)==0 or u(counts,4)==0 then return nil,'no_local_avatar' end
@@ -47,12 +47,12 @@ function A.snapshot(api,game,exe,key)
         ref=u(read(pm+0x3a8,4,true))
     end
     if ref==0x7fff then return nil,'gone' end
-    local owner,manager=global(0x276f0c0),global(0x276ca30)
+    local owner,manager=global(0x346bf98),global(0x3326d20)
     if key and (api.distance(owner,key.owner)~=0 or api.distance(manager,key.manager)~=0) then return nil,'gone' end
-    local ei=lookup(owner+0xf21a88,ref,1048576)
+    local ei=lookup(owner+0xf22ec8,ref,1048576)
     if not ei or ei==INVALID then return nil,'gone' end
     assert(ei<262144,'Unsupported entity index')
-    s.entity=owner+0xf31ad8+ei*24
+    s.entity=owner+0xf32f18+ei*24
     local entity=read(s.entity,24,true)
     if entity:sub(1,8)~='\151\250\077\041\077\051\028\077' then return nil,'gone' end
     local id,unit=u(entity,8),u(entity,12)
@@ -65,7 +65,7 @@ function A.snapshot(api,game,exe,key)
     assert(u(read(manager+0x53e1b8+ai*0x1238+0x2ac,4,true))==id,'Vault identity mismatch')
     local direction=manager+0x53e134+ai*0x1238
     assert(u(read(direction+40,4,true))==id,'Movement direction identity mismatch')
-    local mm=global(0x276c280)
+    local mm=global(0x3326558)
     local mi=lookup(mm+0x48a0,id,1048576)
     assert(mi and mi~=INVALID and mi<8192,'Movement unavailable')
     local move=read(ptr(read(mm+0x48c8,8,true))+mi*132,132)
@@ -73,7 +73,7 @@ function A.snapshot(api,game,exe,key)
     local mover=read(mover_address,164)
     read(mover_address+76,16,true)
     local handle=u(mover,88)
-    local pool=ptr(read(exe+0x27c7178+bit.rshift(handle,30)*0x810,8,true))
+    local pool=ptr(read(exe+0x27c3298+bit.rshift(handle,30)*0x810,8,true))
     local h=read(pool,56,true)
     local index=bit.band(handle,u(h,40))
     assert(index>=0 and index<u(h,36) and bit.band(handle,u(h,52))~=0,'Invalid mover handle')
@@ -85,7 +85,7 @@ function A.snapshot(api,game,exe,key)
     local definition,object=ptr(record,16),ptr(record,24)
     local def=read(definition,28,true)
     assert(u(def)==u(mover,76),'Mover name mismatch')
-    assert(api.distance(ptr(read(object,8,true)),exe+0x16a5018)==0,'Unsupported character controller')
+    assert(api.distance(ptr(read(object,8,true)),exe+0x16a16c8)==0,'Unsupported character controller')
     local up=vec(read(object+80,12,true),0)
     assert(math.abs(up[1])+math.abs(up[2])+math.abs(up[3]-1)<0.001,'Unsupported up vector')
     -- Preserve the separate 70-degree support/drop limit and shared definition.
@@ -103,7 +103,7 @@ function A.snapshot(api,game,exe,key)
         settings=read(base,852)
         s.cells.enter=base+152;s.cells.exit=base+172;s.cells.height=base+260
     else
-        local component=ptr(read(owner+0xf11778,8,true))
+        local component=ptr(read(owner+0xf12bb8,8,true))
         local map=read(component,32,true);local found=false
         for i=0,1 do
             if map:sub(i*16+1,i*16+8)==entity:sub(1,8) and u(map,i*16+8)==0 then found=true end
@@ -123,12 +123,12 @@ function A.snapshot(api,game,exe,key)
     if key then return s end
     s.manual=read(manager+0x150+ai*0xa7aec+0x1b68+14*32,1,true):byte()~=0
     local flags=read(manager+0x53e880+ai*0x1238,24,true)
-    s.climbing=bit.band(u(flags,12),0x40)~=0
-    s.eligible=bit.band(u(flags),2)~=0 and bit.band(u(flags),0x101000)==0
-        and bit.band(u(flags,4),0x1000000)==0 and bit.band(u(flags,8),0x84010800)==0
-        and bit.band(u(flags,12),0x2000a303)==0 and bit.band(u(flags,16),1)==0
-    s.ground=bit.band(u(flags,4),0x80000000)==0 and bit.band(u(flags,8),0xc0000000)==0
-        and bit.band(u(flags,12),4)==0 and move:byte(16)==0 and move:byte(13)==0
+    s.climbing=bit.band(u(flags,12),0x200)~=0
+    s.eligible=bit.band(u(flags),2)~=0 and bit.band(u(flags),0x404000)==0
+        and bit.band(u(flags,4),0x8000000)==0 and bit.band(u(flags,8),0x20084000)==0
+        and bit.band(u(flags,12),0x5181c)==0 and bit.band(u(flags,16),9)==0
+    s.ground=bit.band(u(flags,8),4)==0 and bit.band(u(flags,12),0x26)==0
+        and move:byte(16)==0 and move:byte(13)==0
     local n=vec(move,20);local length=math.sqrt(n[1]^2+n[2]^2+n[3]^2)
     s.normal_z=finite(length) and length>0.99 and length<1.01 and n[3]/length or -1
     s.native=assert(api.native(game,exe),'Native slope support unavailable')

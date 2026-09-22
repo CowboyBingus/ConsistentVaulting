@@ -1,3 +1,9 @@
+# v8.6
+
+- Update compatibility for game build 25327279.
+- Fix higher-ledge detection and fresh climb attempts.
+- Preserve obstacle clearance, slope and movement checks.
+
 # v8.2
 
 - Disable periodic diagnostic file writes and console output by default.

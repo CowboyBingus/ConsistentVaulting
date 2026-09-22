@@ -22,14 +22,16 @@ return function(create_api,patch,build)
             file:write('observed_queries='..state.observed_queries..'\nprepared='..state.prepared
                 ..'\nmetadata_fallbacks='..state.metadata_fallbacks..'\n')
             for _,key in ipairs({'updates','polls','stage_0','stage_1','stage_2','stage_3',
-                'fresh_queries','retry_calls','native_starts','context_reprojections','reprojected_retries','reprojected_starts',
+                'fresh_queries','retry_calls','native_starts','context_reprojections','query_rebuilds','reprojected_retries','reprojected_starts',
                 'step_report_retries','step_report_starts',
                 'slope_arms','slope_overrides','slope_climbs','slope_landings',
-                'candidate_checks','raised_queries','raised_context_fallbacks','ledge_arms','ledge_climbs','ledge_attempt_expiries'}) do
+                'candidate_checks','raised_queries','raised_context_fallbacks','raised_approach_rebuilds','ledge_arms','ledge_climbs','ledge_attempt_expiries'}) do
                 file:write(key..'='..tostring(state[key] or 0)..'\n')
             end
             file:write('last_phase='..tostring(state.phase or 'startup')..'\n')
             file:write('last_retry_reason='..tostring(state.last_retry_reason or 'none')..'\n')
+            file:write('last_approach_reason='..tostring(state.last_approach_reason or 'none')..'\n')
+            file:write('last_approach_code='..tostring(state.last_approach_code or 'none')..'\n')
             file:write('slope_status='..tostring(state.slope_status or 'startup')..'\n')
             file:write('slope_last_release='..tostring(state.slope_last_release or 'none')..'\n')
             file:write('candidate_reason='..tostring(state.candidate_reason or 'none')..'\n')

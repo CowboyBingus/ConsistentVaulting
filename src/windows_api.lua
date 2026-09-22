@@ -120,9 +120,9 @@ return function()
             return assert(api.pointer(api.read(address,8)), 'Native binding unavailable')
         end
         local bindings={
-            {0x276c070,0x27d1830,{{0x18,0x79c290},{0x38,0x79e320},{0xa8,0x79e490}}},
-            {0x276c0b8,0x27d1ad0,{{0,0x7d3280},{0x28,0x7d40b0},{0x68,0x7d4e70}}},
-            {0x276c060,0x27d19e0,{{0,0x7a48f0},{0x68,0x7830c0},{0x80,0x7fe0a0}}},
+            {0x3326338,0x27cd910,{{0x18,0x7972f0},{0x38,0x7993d0},{0xa8,0x799540}}},
+            {0x3326388,0x27cdc30,{{0,0x7ce220},{0x28,0x7cf050},{0x68,0x7cfe10}}},
+            {0x3326328,0x27cdb40,{{0,0x79f860},{0x68,0x77dec0},{0x80,0x7f9070}}},
         }
         for _,binding in ipairs(bindings) do
             local table_address=pointer_at(game+binding[1])
@@ -131,26 +131,30 @@ return function()
                 assert(api.distance(pointer_at(table_address+entry[1]),exe)==entry[2], 'Unsupported native function')
             end
         end
-        assert(api.read(game+0xa8b8a0,12)=='\072\139\196\072\137\088\008\072\137\104\032\086',
+        assert(api.read(game+0xa9d560,12)=='\072\139\196\072\137\088\008\072\137\104\032\086',
             'Native exit validator changed')
-        assert(api.read(game+0xa883f0,16)=='\064\085\083\086\087\065\084\065\086\065\087\072\141\108\036\208',
+        assert(api.read(game+0xa9a0c0,16)=='\064\085\083\086\087\065\084\065\086\065\087\072\141\108\036\208',
             'Native vault driver changed')
         if native_cache then return native_cache end
-        local valid=ffi.cast('uint64_t (*)(uint32_t)',exe+0x79c290)
-        local flags=ffi.cast('uint32_t (*)(uint32_t)',exe+0x79e320)
-        local motion=ffi.cast('void (*)(uint32_t,float *,float *)',exe+0x79e490)
-        local mover=ffi.cast('uint32_t (*)(uint32_t,uint32_t)',exe+0x7d3280)
-        local dimensions=ffi.cast('void *(*)(uint32_t)',exe+0x7d4e70)
-        local position=ffi.cast('void (*)(uint32_t,float *)',exe+0x7d40b0)
-        local basis=ffi.cast('void *(*)(void *,const float *,const float *)',game+0x1490a30)
-        local rotation=ffi.cast('void (*)(float *,const void *)',game+0x148c030)
+        local valid=ffi.cast('uint64_t (*)(uint32_t)',exe+0x7972f0)
+        local flags=ffi.cast('uint32_t (*)(uint32_t)',exe+0x7993d0)
+        local motion=ffi.cast('void (*)(uint32_t,float *,float *)',exe+0x799540)
+        local mover=ffi.cast('uint32_t (*)(uint32_t,uint32_t)',exe+0x7ce220)
+        local dimensions=ffi.cast('void *(*)(uint32_t)',exe+0x7cfe10)
+        local position=ffi.cast('void (*)(uint32_t,float *)',exe+0x7cf050)
+        local basis=ffi.cast('void *(*)(void *,const float *,const float *)',game+0x173f080)
+        local rotation=ffi.cast('void (*)(float *,const void *)',game+0x173a680)
         -- RCX is unused in this build; RDX is the validated avatar entity.
-        local classify=ffi.cast('int32_t (*)(void *,const void *,const float *,const float *)',game+0xa8b8a0)
-        local world_id=ffi.cast('uint32_t (*)(const void *)',exe+0x7a48f0)
-        local query=ffi.cast('uint32_t (*)(uint32_t,uint32_t,uint32_t,uint32_t,uint32_t,const void *,void *,uint32_t)',exe+0x7fe0a0)
-        local drive=ffi.cast('void (*)(void *,float)',game+0xa883f0)
-        local detect=ffi.cast('void (*)(void *,float)',game+0xa8a710)
-        local override=ffi.cast('void (*)(void *,const void *,const void *)',game+0x832d40)
+        local classify=ffi.cast('int32_t (*)(void *,const void *,const float *,const float *)',game+0xa9d560)
+        local world_id=ffi.cast('uint32_t (*)(const void *)',exe+0x79f860)
+        local query=ffi.cast('uint32_t (*)(uint32_t,uint32_t,uint32_t,uint32_t,uint32_t,const void *,void *,uint32_t)',exe+0x7f9070)
+        local drive=ffi.cast('void (*)(void *,float)',game+0xa9a0c0)
+        local detect=ffi.cast('uint32_t (*)(void *,float)',game+0xa9c3e0)
+        assert(api.read(game+0xa9dd90,16)=='\072\139\196\072\137\088\008\085\086\087\065\084\065\085\065\086',
+            'Native approach geometry routine changed')
+        -- RCX is unused. The remaining arguments and all outputs are private.
+        local approach=ffi.cast('uint8_t (*)(void *,const void *,float *,float *,float *,float *)',game+0xa9dd90)
+        local override=ffi.cast('void (*)(void *,const void *,const void *)',game+0x83c420)
         local function aligned(size)
             local storage=ffi.new('uint8_t[?]',size+15)
             local address=tonumber(ffi.cast('uintptr_t',storage))
@@ -158,7 +162,7 @@ return function()
         end
         local native={}
         function native.ensure_override(manager,entity)
-            assert(api.read(game+0x832d40,16)=='\072\137\092\036\008\072\137\108\036\016\072\137\116\036\024\087',
+            assert(api.read(game+0x83c420,16)=='\072\137\092\036\008\072\137\108\036\016\072\137\116\036\024\087',
                 'Native avatar override routine changed')
             -- 510370 reads start/count at +4/+8. An empty modifier leaves all
             -- fields unchanged; 832d40 creates the entity-owned record if absent.
@@ -203,8 +207,8 @@ return function()
             ffi.cast('uint32_t *',copy+4)[0]=0
             -- Stage zero only performs the original approach search and writes
             -- its new geometry into this private copy; it cannot start a vault.
-            detect(copy,0)
-            if ffi.cast('uint32_t *',copy+4)[0]~=1 then return false,'native_approach_blocked' end
+            local result=tonumber(detect(copy,0))
+            if ffi.cast('uint32_t *',copy+4)[0]~=1 then return false,'native_approach_blocked',nil,result end
             for offset=0x1e8,0x210,4 do
                 local previous=ffi.new('float[1]')
                 ffi.copy(previous,controller_bytes:sub(offset+1,offset+4),4)
@@ -216,8 +220,51 @@ return function()
                     return false,'native_approach_geometry_changed',fresh
                 end
             end
+            local fresh=ffi.string(copy,0x2b0)
             assert(owner~=nil)
-            return true
+            return true,nil,fresh
+        end
+        function native.raised_approach(controller_bytes,unit,name,direction,reach)
+            -- Reuse the native five-slice ledge search at the existing 2.5
+            -- allowance, without temporarily changing real avatar settings.
+            if #controller_bytes~=0x2b0 or type(reach)~='number' or reach~=reach
+                or reach<=0 or reach>1.5 then return nil,'unsupported_raised_reach' end
+            local norm=0
+            for i=1,3 do
+                local v=direction[i]
+                if type(v)~='number' or v~=v or math.abs(v)>1.001 then return nil,'unsupported_raised_direction' end
+                norm=norm+v*v
+            end
+            if math.abs(norm-1)>0.001 or math.abs(direction[3])>0.001 then return nil,'unsupported_raised_direction' end
+            local id=mover(unit,name)
+            local data=dimensions(id)
+            local shape=data~=nil and api.read(data,20)
+            if not shape then return nil,'raised_mover_unavailable' end
+            local dims=ffi.new('float[5]');ffi.copy(dims,shape,20)
+            local radius,minimum=tonumber(dims[3]),tonumber(dims[4])
+            if radius~=radius or minimum~=minimum or radius<=0 or radius>0.5
+                or minimum<0 or minimum>=2.5 then return nil,'unsupported_raised_mover' end
+            local root=ffi.new('float[3]');position(id,root)
+            for i=0,2 do
+                if root[i]~=root[i] or math.abs(root[i])>=100000 then return nil,'raised_mover_unavailable' end
+            end
+            local args=ffi.new('uint8_t[52]')
+            ffi.cast('uint32_t *',args)[0]=unit
+            ffi.copy(args+4,root,12)
+            ffi.copy(args+16,shape:sub(13,16),4)
+            ffi.copy(args+20,shape:sub(9,12),4)
+            ffi.copy(args+24,ffi.new('float[3]',direction),12)
+            ffi.copy(args+36,ffi.new('float[3]',{minimum,2.5,reach}),12)
+            local out=ffi.new('float[8]')
+            if approach(nil,args,out,out+3,out+6,out+7)==0 then return nil,'raised_approach_no_ledge' end
+            local owner,copy=aligned(0x2b0)
+            ffi.copy(copy,controller_bytes,0x2b0)
+            ffi.cast('uint32_t *',copy+4)[0]=1
+            ffi.copy(copy+488,out,32)
+            ffi.copy(copy+520,args+24,12)
+            local fresh=ffi.string(copy,0x2b0)
+            assert(owner~=nil)
+            return fresh
         end
         function native.query_basis(direction)
             local owner,matrix=aligned(64)

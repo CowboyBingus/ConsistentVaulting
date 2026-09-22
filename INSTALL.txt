@@ -1,82 +1,16 @@
-TEST BUILD: mission-mode and centralized-log corrections. In-game validation pending.
+Consistent Vaulting v8.6
 
-Requires Bingus Shared Loader v14 for the shared log folder.
+Supports Helldivers 2 Steam build 25327279 / game 1.8.45850.0.
+Requires Bingus Shared Loader v16 or newer / API 1.
+
+1. Close Helldivers 2 and use one mod manager.
+2. Replace the previous package with Consistent-Vaulting-v8.6.zip.
+3. Enable this package and Bingus Shared Loader.
+4. With Arsenal's default priority, put the loader last (at the bottom).
+   With first-mod priority enabled, put the loader first.
+5. Purge / Deploy, then start the game normally.
+
+To remove or change options, close the game, disable the package, and
+Purge / Deploy again. Keep the loader enabled while other mods need it.
 
 Logs: %LOCALAPPDATA%/CowboyBingus/Helldivers2/Logs
-
-
-
-Consistent Vaulting - v8.2
-
-
-
-Requires Bingus Shared Loader loader-v14 or newer / API 1 or newer.
-
-Supported: Steam build 24826606 / EXE 1.8.45317.0.
-
-
-
-1. Close Helldivers 2.
-
-2. Import Consistent-Vaulting-v8.2.zip into Arsenal or HD2MM. Replace any earlier
-
-   copy so only one Consistent Vaulting package is enabled.
-
-3. Install and enable the compatible Bingus Shared Loader package separately.
-
-4. Under Arsenal's default priority, place the loader last. If first-mod
-
-   priority is enabled, place it first.
-
-5. Purge and Deploy, then launch the game normally.
-
-
-
-Use the normal manual-climb input. Release before retrying an expired attempt.
-
-A fresh input opens a short search window; usable collision and native exit
-
-checks are required before a retry or temporary allowance is granted.
-
-
-
-Higher-top assistance supports eligible grounded tops up to 2.5 game units.
-
-Steep-surface assistance supports validated slopes up to 65 degrees within
-
-the original climb height, with walking speed after assisted climbing begins.
-
-These modes are separate. Pressing climb in open space does not slow movement.
-
-
-
-Only the installing player's avatar receives the runtime changes.
-
-Missing collision, excessive height or blocked clearance can still prevent
-
-a climb.
-
-
-
-Logs are written locally as ConsistentVaulting.log and BingusSharedLoader.log
-
-under the Windows LOCALAPPDATA directory. They are not sent by the mod.
-
-Review logs before sharing: diagnostics can contain session-specific values.
-
-Developer validation status and log fields are documented in docs/TECHNICAL.md
-
-in the source repository.
-
-
-
-To uninstall, close the game, disable this mod, then Purge and Deploy.
-
-Keep the shared loader if other enabled mods require it.
-
-
-
-Developed with assistance from GPT-6 Astra.
-
-Logs: %LOCALAPPDATA%\CowboyBingus\Helldivers2\Logs
-Requires Bingus Shared Loader v14 or newer for this log folder.
