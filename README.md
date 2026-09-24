@@ -1,3 +1,6 @@
+> Current local compatibility candidate for Steam build 25480438 / EXE 1.8.46015.0. Offline checks passed; live gameplay verification is pending.
+
+Vaulting repair v8.7: Gives higher-ledge discovery its own fresh native approach geometry when the ordinary-height approach rejects and shared query slots have been reused. Height, slope, motion, exit and ownership checks remain; no climb is forced. Installed obstacle confirmation remains pending.
 
 ![Consistent Vaulting](assets/banner.png)
 
@@ -12,6 +15,6 @@ Makes manual vaulting more forgiving than vanilla by checking obstacles again wh
 
 Changes apply only to your Helldiver. Collision, clearance, reach and moving-obstacle checks still govern whether a climb can happen.
 
-See [validation coverage](docs/MIGRATION_VALIDATION.md) for the scope of the release checks. Routine diagnostics are off by default; developers can set `CowboyBingusDiagnostics = true` before initialization to enable them.
+Release **v8.2** includes input/performance fixes. Offline checks cover this revision; in-game frame-time validation is pending. Routine diagnostics are off by default; developers can set `CowboyBingusDiagnostics = true` before initialization to enable them.
 
-Current version: **v8.6**, for game build **25327279**. See [changes](CHANGELOG.md) and [validation coverage](docs/MIGRATION_VALIDATION.md).
+Current version: **v8.7**, for game build **25480438**. See [changes](CHANGELOG.md) and [validation coverage](docs/MIGRATION_VALIDATION.md).

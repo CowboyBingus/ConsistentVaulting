@@ -1,3 +1,9 @@
+# v8.7
+
+- Support Steam build 25480438 with refreshed native guards.
+- Preserve higher-ledge detection and bounded slope assistance.
+- Offline builds and package checks pass; live gameplay validation remains pending.
+
 # v8.6
 
 - Update compatibility for game build 25327279.

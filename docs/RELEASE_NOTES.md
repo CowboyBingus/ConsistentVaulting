@@ -1,3 +1,3 @@
-- Update compatibility for game build 25327279.
-- Fix higher-ledge detection and fresh climb attempts.
-- Preserve obstacle clearance, slope and movement checks.
+- Support Steam build 25480438 with refreshed native guards.
+- Preserve higher-ledge detection and bounded slope assistance.
+- Offline builds and package checks pass; live gameplay validation remains pending.
