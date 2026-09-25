@@ -1,28 +1,20 @@
-Current local compatibility candidate for Steam build 25480438 / EXE 1.8.46015.0. Offline checks passed; live gameplay verification is pending.
+Current local compatibility candidate for Steam build 25480438 / EXE 1.8.46015.0. Offline checks passed; vaulting, slope and ledge assists were confirmed live.
 
-Vaulting repair v8.7: Gives higher-ledge discovery its own fresh native approach geometry when the ordinary-height approach rejects and shared query slots have been reused. Height, slope, motion, exit and ownership checks remain; no climb is forced. Installed obstacle confirmation remains pending.
-
-TEST BUILD: mission-mode and centralized-log corrections. In-game validation pending.
+Performance update v8.8: Slope assist reads only the input state while no assist is active and the vault input is released; native tables are verified once per session. Presses and active assists still read and validate everything. Main-thread time per mission frame fell from about 0.44 ms to 0.25 ms; vaulting, slope and ledge assists were confirmed live.
 
 Requires Bingus Shared Loader v16 for the shared log folder.
 
 Logs: %LOCALAPPDATA%/CowboyBingus/Helldivers2/Logs
 
-
-
-Consistent Vaulting - v8.7
-
-
+Consistent Vaulting - v8.8
 
 Requires Bingus Shared Loader loader-v14 or newer / API 1 or newer.
 
 Supported: Steam build 25480438 / EXE 1.8.46015.0.
 
-
-
 1. Close Helldivers 2.
 
-2. Import Consistent-Vaulting-v8.7.zip into Arsenal or HD2MM. Replace any earlier
+2. Import Consistent-Vaulting-v8.8.zip into Arsenal or HD2MM. Replace any earlier
 
    copy so only one Consistent Vaulting package is enabled.
 
@@ -34,15 +26,11 @@ Supported: Steam build 25480438 / EXE 1.8.46015.0.
 
 5. Purge and Deploy, then launch the game normally.
 
-
-
 Use the normal manual-climb input. Release before retrying an expired attempt.
 
 A fresh input opens a short search window; usable collision and native exit
 
 checks are required before a retry or temporary allowance is granted.
-
-
 
 Higher-top assistance supports eligible grounded tops up to 2.5 game units.
 
@@ -52,15 +40,11 @@ the original climb height, with walking speed after assisted climbing begins.
 
 These modes are separate. Pressing climb in open space does not slow movement.
 
-
-
 Only the installing player's avatar receives the runtime changes.
 
 Missing collision, excessive height or blocked clearance can still prevent
 
 a climb.
-
-
 
 Logs are written locally as ConsistentVaulting.log and BingusSharedLoader.log
 
@@ -72,13 +56,9 @@ Developer validation status and log fields are documented in docs/TECHNICAL.md
 
 in the source repository.
 
-
-
 To uninstall, close the game, disable this mod, then Purge and Deploy.
 
 Keep the shared loader if other enabled mods require it.
-
-
 
 Developed with assistance from GPT-6 Astra.
 
