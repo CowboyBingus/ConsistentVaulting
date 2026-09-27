@@ -1,3 +1,3 @@
-- Slope assist reads only the input state while no assist is active and the vault input is released; the mover, controller, settings and flags are still read and validated in full on every press and during every assist.
-- Verifies the native function tables once per session instead of on every check, decodes fields without copying the rest of each buffer, computes each hash-lookup product once and reuses one read buffer.
-- Measured in real play: about 0.44 ms to 0.25 ms of main-thread time per frame in missions, and 4.0 to 3.4 MB/s of Lua garbage. Vaulting, slope and ledge assists were confirmed live.
+- Documentation-only release: the mod is identical to v8.8 (same compiled resource).
+- Rewrites the install notes packaged with the mod and the README status: one current status line instead of the compatibility-candidate notes left from the game-build update, and removes an old note that frame-time validation was pending. Vaulting, slope and ledge assists were confirmed in live play.
+- Lists one loader requirement, Bingus Shared Loader v18.

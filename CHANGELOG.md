@@ -1,3 +1,9 @@
+# v8.8.1
+
+- Documentation-only release: the mod is identical to v8.8 (same compiled resource).
+- Rewrites the install notes packaged with the mod and the README status: one current status line instead of the compatibility-candidate notes left from the game-build update, and removes an old note that frame-time validation was pending. Vaulting, slope and ledge assists were confirmed in live play.
+- Lists one loader requirement, Bingus Shared Loader v18.
+
 # v8.8
 
 - Slope assist reads only the input state while no assist is active and the vault input is released; the mover, controller, settings and flags are still read and validated in full on every press and during every assist.

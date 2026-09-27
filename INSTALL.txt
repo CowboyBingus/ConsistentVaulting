@@ -1,66 +1,51 @@
-Current local compatibility candidate for Steam build 25480438 / EXE 1.8.46015.0. Offline checks passed; vaulting, slope and ledge assists were confirmed live.
+Consistent Vaulting - v8.8.1
 
-Performance update v8.8: Slope assist reads only the input state while no assist is active and the vault input is released; native tables are verified once per session. Presses and active assists still read and validate everything. Main-thread time per mission frame fell from about 0.44 ms to 0.25 ms; vaulting, slope and ledge assists were confirmed live.
+Makes manual vaulting more forgiving than vanilla by checking obstacles again
+when an otherwise usable climb is rejected.
 
-Requires Bingus Shared Loader v16 for the shared log folder.
+Release for Steam build 25480438 / EXE 1.8.46015.0. Offline checks passed;
+vaulting, slope and ledge assists were confirmed in live play. v8.8.1 changes
+only this documentation; the mod is identical to v8.8.
 
-Logs: %LOCALAPPDATA%/CowboyBingus/Helldivers2/Logs
+v8.8 performance: slope assist reads only the input state while no assist is
+active and the vault input is released; native tables are verified once per
+session. Main-thread time per mission frame fell from about 0.44 ms to 0.25 ms.
 
-Consistent Vaulting - v8.8
-
-Requires Bingus Shared Loader loader-v14 or newer / API 1 or newer.
-
-Supported: Steam build 25480438 / EXE 1.8.46015.0.
-
+INSTALL
 1. Close Helldivers 2.
+2. Import Consistent-Vaulting-v8.8.1.zip and Bingus-Shared-Loader-v18.zip into
+   Arsenal or HD2MM. Replace any earlier copy so only one Consistent Vaulting
+   package is enabled.
+3. Enable both packages. Under Arsenal's default priority, place the loader
+   last. If first-mod priority is enabled, place it first.
+4. Purge and Deploy, then launch the game normally.
 
-2. Import Consistent-Vaulting-v8.8.zip into Arsenal or HD2MM. Replace any earlier
-
-   copy so only one Consistent Vaulting package is enabled.
-
-3. Install and enable the compatible Bingus Shared Loader package separately.
-
-4. Under Arsenal's default priority, place the loader last. If first-mod
-
-   priority is enabled, place it first.
-
-5. Purge and Deploy, then launch the game normally.
-
+USING IT
 Use the normal manual-climb input. Release before retrying an expired attempt.
-
 A fresh input opens a short search window; usable collision and native exit
-
 checks are required before a retry or temporary allowance is granted.
 
 Higher-top assistance supports eligible grounded tops up to 2.5 game units.
-
 Steep-surface assistance supports validated slopes up to 65 degrees within
-
 the original climb height, with walking speed after assisted climbing begins.
-
 These modes are separate. Pressing climb in open space does not slow movement.
 
 Only the installing player's avatar receives the runtime changes.
-
 Missing collision, excessive height or blocked clearance can still prevent
-
 a climb.
 
-Logs are written locally as ConsistentVaulting.log and BingusSharedLoader.log
-
-under the Windows LOCALAPPDATA directory. They are not sent by the mod.
-
+LOGS
+ConsistentVaulting.log and BingusSharedLoader.log are written locally under
+%LOCALAPPDATA%/CowboyBingus/Helldivers2/Logs. They are not sent by the mod.
 Review logs before sharing: diagnostics can contain session-specific values.
-
 Developer validation status and log fields are documented in docs/TECHNICAL.md
-
 in the source repository.
 
 To uninstall, close the game, disable this mod, then Purge and Deploy.
-
 Keep the shared loader if other enabled mods require it.
 
-Developed with assistance from GPT-6 Astra.
+Requires Bingus Shared Loader v18 / API 1:
+https://github.com/CowboyBingus/BingusSharedLoader/releases/latest
+Supported: Steam build 25480438 / EXE 1.8.46015.0.
 
-Logs: %LOCALAPPDATA%\CowboyBingus\Helldivers2\Logs
-Requires Bingus Shared Loader v17 or newer for this log folder.
+Developed with assistance from GPT-6 Astra and Claude Opus 5.5.

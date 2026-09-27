@@ -1,6 +1,4 @@
-> Current local compatibility candidate for Steam build 25480438 / EXE 1.8.46015.0. Offline checks passed; vaulting, slope and ledge assists were confirmed live.
-
-Performance update v8.8: Slope assist reads only the input state while no assist is active and the vault input is released; native tables are verified once per session. Presses and active assists still read and validate everything. Main-thread time per mission frame fell from about 0.44 ms to 0.25 ms; vaulting, slope and ledge assists were confirmed live.
+> Release **v8.8.1** for Steam build 25480438 / EXE 1.8.46015.0. Offline checks passed; vaulting, slope and ledge assists were confirmed in live play.
 
 ![Consistent Vaulting](assets/banner.png)
 
@@ -15,6 +13,8 @@ Makes manual vaulting more forgiving than vanilla by checking obstacles again wh
 
 Changes apply only to your Helldiver. Collision, clearance, reach and moving-obstacle checks still govern whether a climb can happen.
 
-Release **v8.2** includes input/performance fixes. Offline checks cover this revision; in-game frame-time validation is pending. Routine diagnostics are off by default; developers can set `CowboyBingusDiagnostics = true` before initialization to enable them.
+Release **v8.8** reads only the input state while no slope assist is active and the vault input is released; presses and active assists still read and validate everything. Measured in real play, main-thread time per mission frame fell from about 0.44 ms to 0.25 ms. Routine diagnostics are off by default; developers can set `CowboyBingusDiagnostics = true` before initialization to enable them.
 
-Current version: **v8.8**, for game build **25480438**. See [changes](CHANGELOG.md) and [validation coverage](docs/MIGRATION_VALIDATION.md).
+**Install:** close the game, import `Consistent-Vaulting-v8.8.1.zip` and `Bingus-Shared-Loader-v18.zip` into Arsenal or HD2MM, enable both and Purge / Deploy. With Arsenal's default priority, put the loader last. [Bingus Shared Loader](https://github.com/CowboyBingus/BingusSharedLoader/releases/latest) is a separate required download.
+
+Current version: **v8.8.1**, for game build **25480438**. See [changes](CHANGELOG.md) and [validation coverage](docs/MIGRATION_VALIDATION.md).
