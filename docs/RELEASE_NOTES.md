@@ -1,3 +1,8 @@
-- Documentation-only release: the mod is identical to v8.8 (same compiled resource).
-- Rewrites the install notes packaged with the mod and the README status: one current status line instead of the compatibility-candidate notes left from the game-build update, and removes an old note that frame-time validation was pending. Vaulting, slope and ledge assists were confirmed in live play.
-- Lists one loader requirement, Bingus Shared Loader v18.
+- One check per frame instead of two while nothing is in progress.
+- While the climb input is released, a check reads 7 values instead of 37-39 and creates no Lua garbage: it re-verifies your Helldiver instead of locating it again.
+- A held vault and an active slope or ledge assist make far fewer memory reads and memory-protection queries.
+- Errors from the game or from other mods now pass through unchanged instead of looking like errors in this mod.
+- After such an error the mod restores its changes, pauses and resumes once 60 frames run without error.
+- An unexpected error inside the mod no longer stops it at once; eight errors close together still stop it.
+- Another mod's Windows declarations can no longer change this mod's calls.
+- Measured in live play: 0.026 ms per frame in client missions and 0.011 on the ship.

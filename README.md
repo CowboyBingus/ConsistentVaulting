@@ -1,4 +1,4 @@
-> Release **v8.8.1** for Steam build 25480438 / EXE 1.8.46015.0. Offline checks passed; vaulting, slope and ledge assists were confirmed in live play.
+> Release **v8.9** for Steam build 25480438 / EXE 1.8.46015.0. Offline checks passed; vaulting, slope and ledge assists were confirmed in live play.
 
 ![Consistent Vaulting](assets/banner.png)
 
@@ -13,8 +13,14 @@ Makes manual vaulting more forgiving than vanilla by checking obstacles again wh
 
 Changes apply only to your Helldiver. Collision, clearance, reach and moving-obstacle checks still govern whether a climb can happen.
 
-Release **v8.8** reads only the input state while no slope assist is active and the vault input is released; presses and active assists still read and validate everything. Measured in real play, main-thread time per mission frame fell from about 0.44 ms to 0.25 ms. Routine diagnostics are off by default; developers can set `CowboyBingusDiagnostics = true` before initialization to enable them.
+Release **v8.9** checks once per frame while nothing is in progress, re-verifies your Helldiver instead of locating it on every check, and pauses instead of stopping after errors elsewhere in the update chain. Measured in live play: 0.026 ms per frame in client missions and 0.011 on the ship. Routine diagnostics are off by default; developers can set `CowboyBingusDiagnostics = true` before initialization to enable them.
 
-**Install:** close the game, import `Consistent-Vaulting-v8.8.1.zip` and `Bingus-Shared-Loader-v18.zip` into Arsenal or HD2MM, enable both and Purge / Deploy. With Arsenal's default priority, put the loader last. [Bingus Shared Loader](https://github.com/CowboyBingus/BingusSharedLoader/releases/latest) is a separate required download.
+**Install:** close the game, import `Consistent-Vaulting-v8.9.zip` and Bingus Shared Loader v18 or newer into Arsenal or HD2MM, enable both and Purge / Deploy. With Arsenal's default priority, put the loader last. [Bingus Shared Loader](https://github.com/CowboyBingus/BingusSharedLoader/releases/latest) is a separate required download.
 
-Current version: **v8.8.1**, for game build **25480438**. See [changes](CHANGELOG.md) and [validation coverage](docs/MIGRATION_VALIDATION.md).
+Current version: **v8.9**, for game build **25480438**. See [changes](CHANGELOG.md) and [validation coverage](docs/MIGRATION_VALIDATION.md).
+
+**AI disclosure:** Developed with assistance from GPT-6 Astra and Claude Opus 5.5.
+
+## License
+
+Zero-Clause BSD (0BSD): use, copy, modify and distribute for any purpose, with no conditions. See `LICENSE`.

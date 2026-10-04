@@ -1,19 +1,20 @@
-Consistent Vaulting - v8.8.1
+Consistent Vaulting - v8.9
 
 Makes manual vaulting more forgiving than vanilla by checking obstacles again
 when an otherwise usable climb is rejected.
 
 Release for Steam build 25480438 / EXE 1.8.46015.0. Offline checks passed;
-vaulting, slope and ledge assists were confirmed in live play. v8.8.1 changes
-only this documentation; the mod is identical to v8.8.
+vaulting, slope and ledge assists were confirmed in live play.
 
-v8.8 performance: slope assist reads only the input state while no assist is
-active and the vault input is released; native tables are verified once per
-session. Main-thread time per mission frame fell from about 0.44 ms to 0.25 ms.
+v8.9 performance: one check per frame while nothing is in progress, and the
+local avatar is re-verified instead of located on every check. After an error
+elsewhere in the update chain the mod pauses and resumes instead of stopping.
+Measured in live play: 0.026 ms per frame in client missions and 0.011 on the
+ship.
 
 INSTALL
 1. Close Helldivers 2.
-2. Import Consistent-Vaulting-v8.8.1.zip and Bingus-Shared-Loader-v18.zip into
+2. Import Consistent-Vaulting-v8.9.zip and Bingus Shared Loader v18 or newer into
    Arsenal or HD2MM. Replace any earlier copy so only one Consistent Vaulting
    package is enabled.
 3. Enable both packages. Under Arsenal's default priority, place the loader
@@ -44,7 +45,7 @@ in the source repository.
 To uninstall, close the game, disable this mod, then Purge and Deploy.
 Keep the shared loader if other enabled mods require it.
 
-Requires Bingus Shared Loader v18 / API 1:
+Requires Bingus Shared Loader v18 or newer (v19 is current):
 https://github.com/CowboyBingus/BingusSharedLoader/releases/latest
 Supported: Steam build 25480438 / EXE 1.8.46015.0.
 

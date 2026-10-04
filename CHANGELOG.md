@@ -1,3 +1,27 @@
+# v8.9
+
+- One check per frame instead of two while nothing is in progress; the second check, after the game's update, runs only while a vault edit is held, an assist or its press window is active, or a vault query meets the held input.
+- While the input is released, a check reads 7 values instead of 37-39: it re-verifies the local avatar it found before instead of locating it again.
+- With the input held but no vault query, a check reads 19 values instead of 37-39; neither case takes a timestamp.
+- Outside a mission a check reads 2 values instead of 4.
+- While no vault can happen, a check creates no Lua garbage (about 3.1 KB per frame in a mission and 0.8 KB outside one before).
+- While a vault query meets the held input, the vault part reuses the avatar the slope part just located (about 18 reads fewer per check).
+- A held vault edit stays in place while each check would make the same edit, instead of being restored and written again: up to six memory-protection queries per frame fewer.
+- A kept vault edit is no longer read a second time right after the check: 92 reads instead of 174 per check in the offline fixture; every write still checks first.
+- Memory protection is checked once per region a check writes: an assist arms with 2 protection queries instead of 6 and releases with 3 instead of 8.
+- Arming and releasing a slope or ledge assist verify its game data once around their writes: about 150 and 110 fewer memory reads per assist.
+- With the input held or an assist active, the assist settings come from a read already made (3 reads fewer per check), and an invalid float in memory decodes as a plain NaN.
+- An error raised by the game's update or another mod's now passes through unchanged, so its stack trace starts where it was raised.
+- After such an error the mod restores its changes and pauses, then resumes once the game's update has run without error for 60 frames.
+- An unexpected error inside the mod no longer stops it at once: it restores its changes and starts over.
+- Eight errors of either kind without an error-free minute between them still stop the mod for the session.
+- The shutdown status keeps the first failure (`stopped after: <reason>`) instead of overwriting it with `stopped`.
+- A restore that raises no longer reaches the game's update or shutdown; it is reported as `local_restore_failed`.
+- Calls Windows through Bingus Shared Runtime v1 under private names, so another mod's declarations of the same functions can no longer change this mod's calls.
+- Each game module's hash is read once per session for every mod that uses the runtime.
+- The mod is now licensed under the Zero-Clause BSD license (0BSD).
+- Measured in live play: 0.026 ms per frame in client missions and 0.011 on the ship.
+
 # v8.8.1
 
 - Documentation-only release: the mod is identical to v8.8 (same compiled resource).

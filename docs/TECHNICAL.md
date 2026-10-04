@@ -2,9 +2,9 @@
 
 ## Supported runtime
 
-The module is locked to Steam build 25327279 / EXE 1.8.45850.0 and the module hashes in `scripts/archive.py`. It loads as `mods/cowboybingus/consistent_vaulting` through Bingus Shared Loader loader-v4 or newer / API 1 or newer. The resource name and mod-manager GUID are compatibility identifiers.
+The module is locked to Steam build 25480438 / EXE 1.8.46015.0 and the module hashes in `scripts/archive.py`. It loads as `mods/cowboybingus/consistent_vaulting` through Bingus Shared Loader; it requires v18 or newer (v19 is current), and its own load check accepts loader-v4 / API 1 or newer. The resource name and mod-manager GUID are compatibility identifiers.
 
-The package supplies stripped LuaJIT bytecode. It invokes existing engine functions through FFI and uses existing writable private data. It installs no custom DLL, executable-memory allocation, instruction patch or protection change.
+The package supplies stripped LuaJIT bytecode. It invokes existing engine functions through FFI and uses existing writable private data. It installs no custom DLL, executable-memory allocation, instruction patch or protection change. Memory reads, protection checks, writes and module hashes come from `src/bingus_runtime.lua` v1, a byte-identical copy of the shared CowboyBingus runtime: it declares every Windows function under private, versioned names and reads each module's hash once per session for every mod that uses it.
 
 ## Local ownership and lifetime
 
@@ -17,6 +17,8 @@ Data-v8.6 retains private templates for reused query slots and fixes a circular 
 These rebuilt queries are discovery-only. The native selectors at game.dll +0xA9E450 and +0xA9E650 still read capacity/result counts from the shared scheduler. They must not consume a controller whose IDs now refer to unrelated records. A valid private candidate can enable the existing local slope/height allowance; normal native frame processing performs the climb. The direct retry retains its original ownership requirements.
 
 Writes are guarded by the original entity/query epoch and byte values. Stage-2 edits are restored before reevaluation; stage-3 edits are restored immediately after the original native retry. Changed identity or reused storage prevents restoration by stale address. Failed or partial writes attempt rollback. Shutdown and original-update exceptions use the same cleanup.
+
+The update chain is the runtime's guard. The game's update runs outside pcall, so its errors reach the engine unchanged. After such an error the mod restores its edits, resets to a fresh start and pauses; it resumes once the updates below have returned on 60 frames in a row. Its own errors restore and reset the same way and are counted. Eight errors below it, or eight of its own, in one burst (a burst ends after 3,600 error-free frames), a refusal or a restore that fails stop it for the session; the first failure survives shutdown.
 
 ## Manual candidate selection
 
@@ -67,6 +69,51 @@ The query path temporarily writes at most 120 bytes: one 44-byte selected hit, u
 | Local settings override creation | game.dll 0x83c420 |
 
 Both module hashes, live physics/mover bindings and selected function entry bytes are checked. Native SIMD buffers are aligned. Exit results 3 and 4 qualify; 5 rejects. This validator is not a full swept-animation trajectory guarantee.
+
+## Per-frame cost and garbage
+
+### Design: allocation-free held vault and no-avatar checks
+
+Idle checks (outside a mission, idle in a mission, a retained query with the input released) allocate nothing. Two per-frame states still create Lua garbage, measured offline in the game's lua51.dll with the runtime's memory API on real memory, a fixture clock and fixture natives, after a warm-up:
+
+| State | Checks per frame | Garbage per frame (compiled / interpreted) |
+| --- | --- | --- |
+| Vault input held on a complete stage-2 query, prepared edit kept | 2 | 50.6 KB / 75.7 KB |
+| In a mission without a local avatar (dead, respawning) | 1 | 0.64-1.9 KB, 1.15 KB with no unit reference |
+
+Cost statement, per frame (calls x in-game cost):
+
+- Without a local avatar: 8 to about 30 ReadProcessMemory (`read` and `read_into`, about 1-2 us each in game), depending on where the identity chain stops; no VirtualQuery, no write, no native call. Unchanged.
+- Held stage-2 vault: 446 ReadProcessMemory (406 `read`, 40 `read_into`: about 0.45-0.9 ms in game), no VirtualQuery and no write. Per check two mover positions (3 native calls and 1 ReadProcessMemory each), up to two actor checks (4 native calls each) and two exit validations (3 native calls each), unmeasured in game, and one clock read. Unchanged.
+- `api.pointer` and `api.distance` (Lua only, no system call) are no longer called on these paths, because pointers decode in place; their budget pins drop. Every other call keeps its address, size, order and pin.
+- Garbage: target 0 B per frame in both states, interpreted and compiled, in both VMs, pinned in `tests/test_slope.lua` next to the idle pins. Expected leftovers with the real adapter, interpreted code only: the 16-byte box the interpreter makes for a native function's 64-bit or pointer result (actor validity twice per actor check, the mover dimensions per mover position, the basis routine per exit validation) and the v1 clock's 64-bit count. Compiled code does not box them (measured with kernel32 functions of the same return types in both VMs).
+- `api.read` returns a string; LuaJIT interns strings, so re-reading unchanged bytes returns the kept string. Bytes that changed since the last check still make one new string per changed read: in play likely the camera direction, the mover and movement records and possibly the controller while the player moves, up to about 1 KB per check (unmeasured in game).
+- Compiled code: the per-check helpers stay compiled and rarely run paths interpreted; expected within 10 KB of today's 55 KB per session (median of 10 processes in the game's lua51.dll), measured after each step.
+
+Pinned reads per check (2026-10-04, `tests/test_slope.lua` and `tests/test_vault.lua`, offline fixtures; `read` + `read_into`, about 1-2 us each in game; protection queries unchanged):
+
+| Scenario | Before | After |
+| --- | --- | --- |
+| Outside a mission | 4 | 2 |
+| Idle in a mission, or a retained query with the input released | 19 | 7 |
+| Input held, no new press | 48 | 45 |
+| Input held on a retained query (vault snapshot runs) | 72 | 52 |
+| Assist armed (press check) | 165 | 163 |
+| Assist held / climb held | 47 | 44 |
+| Vault-only: held query edit kept | 176 | 94 |
+
+The idle check verifies the kept identity (the input at the kept avatar index, the mission, the unit reference, the entity record at its kept address and the registry slot at its kept index) and resolves the whole chain on any difference or press. The vault snapshot takes the identity chain, and its guards and epoch guards, from the slope snapshot of the same check. A kept vault edit does not read the snapshot's guards a second time; commits and restores still verify them before writing.
+
+Design:
+
+1. Reused records. Each state gets its own snapshot records (a weak table keyed by the state): two vault records used in turn, because a kept edit holds the previous check's record as its epoch; one for the candidate search; one for each check's slope snapshot. A record holds its guard records (address, bytes, view) and ten hit records, and a refill resets every field. A snapshot compared with another one of the same check, or kept (a lease release, the snapshot after override creation, direct calls), gets a fresh record as before.
+2. Numbers inside, api addresses outside. Addresses are Lua numbers inside the snapshots and reach the api as its own address values, made once per address, as the light reads do. Pointers decode in place with `api.pointer`'s rule, hash products from 16-bit halves, fields from the bytes with `string.byte`, floats through one union cell: no `ffi.cast` or 64-bit cdata per field.
+3. Copies where data leaves a check: a lease's key and anchor, a press window's key, a candidate trace's root, direction and hit positions. The native helpers return numbers (mover position: x, y, z; actor: valid, flags, motion) and reuse their buffers.
+4. One reused plan record per check. A held edit is kept by comparing that plan with the held writes as numbers; only a new edit builds write records and byte strings, and a kept edit's pending record is updated in place.
+5. A held hit or controller is restored into one reused buffer. Its guard keeps both the bytes read and the restored view, so unchanged memory finds the same strings.
+6. Cognitive complexity: `M.plan`, `assist_candidate`, `M.refresh` and `M.reproject` become named steps of 15 or less; the rarely run ones stay interpreted.
+
+Each step is checked with a differential against the previous commit over generated frames (every api and native call with its arguments and results, writes, printed lines, log files, state and memory identical; `api.pointer` and `api.distance` compared only in steps that keep them), mutation checks, and compiled code measured in the game's lua51.dll.
 
 ## Diagnostics and verification
 
