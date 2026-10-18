@@ -1,8 +1,3 @@
-- One check per frame instead of two while nothing is in progress.
-- While the climb input is released, a check reads 7 values instead of 37-39 and creates no Lua garbage: it re-verifies your Helldiver instead of locating it again.
-- A held vault and an active slope or ledge assist make far fewer memory reads and memory-protection queries.
-- Errors from the game or from other mods now pass through unchanged instead of looking like errors in this mod.
-- After such an error the mod restores its changes, pauses and resumes once 60 frames run without error.
-- An unexpected error inside the mod no longer stops it at once; eight errors close together still stop it.
-- Another mod's Windows declarations can no longer change this mod's calls.
-- Measured in live play: 0.026 ms per frame in client missions and 0.011 on the ship.
+- In a mission, while the climb input is released, a frame reads only that input; the full check runs every 10th frame and at once on a press. Outside a mission the mod checks every 60th frame instead of every frame.
+- Measured in game: 0.003 ms per frame on the ship instead of 0.013-0.015, and 0.008-0.009 ms in missions instead of 0.025-0.027.
+- After a respawn or a teammate leaving the mission, your climb input is found again within 10 frames; a tap that ends before then is missed, and a press held through it needs a fresh press for slope assistance.

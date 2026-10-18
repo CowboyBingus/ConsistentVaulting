@@ -1,3 +1,9 @@
+# v8.9.1
+
+- In a mission, while the climb input is released, a frame reads only that input; the full check runs every 10th frame and at once on a press. Outside a mission the mod checks every 60th frame instead of every frame.
+- Measured in game: 0.003 ms per frame on the ship instead of 0.013-0.015, and 0.008-0.009 ms in missions instead of 0.025-0.027.
+- After a respawn or a teammate leaving the mission, your climb input is found again within 10 frames; a tap that ends before then is missed, and a press held through it needs a fresh press for slope assistance.
+
 # v8.9
 
 - One check per frame instead of two while nothing is in progress; the second check, after the game's update, runs only while a vault edit is held, an assist or its press window is active, or a vault query meets the held input.
